@@ -196,6 +196,16 @@ toscar_snachandler_0004_0006(struct nafmodule *mod, struct nafconn *conn, struct
 		tlvh = NULL;
 
 
+	if (!gnr_node_findbyname(gm->destname, OSCARSERVICE)) {
+		/*
+		 * If the target user is not obviously here, create them.
+		 *
+		 * XXX It's unclear that this is the right way to do things.
+		 */
+		gnr_node_online(mod, gm->destname, OSCARSERVICE, GNR_NODE_FLAG_NONE, GNR_NODE_METRIC_MAX);
+	}
+
+
 	gnr_msg_route(mod, gm);
 
 
@@ -345,6 +355,15 @@ toscar_snachandler_0004_0007(struct nafmodule *mod, struct nafconn *conn, struct
 	if (gnr_msg_tag_add(mod, gm, "gnrmsg.extraoscartlvs", 'V', (void *)tlvh) != -1)
 		tlvh = NULL;
 
+	if (!gnr_node_findbyname(gm->srcname, OSCARSERVICE)) {
+		/*
+		 * If we receive a message from a user through a local user,
+		 * we can assume they are external, but accessible.
+		 *
+		 * XXX It's unclear that this is the right way to do things.
+		 */
+		gnr_node_online(mod, gm->srcname, OSCARSERVICE, GNR_NODE_FLAG_NONE, GNR_NODE_METRIC_MAX);
+	}
 
 	gnr_msg_route(mod, gm);
 
