@@ -44,9 +44,12 @@ void naf_tlv_free(struct nafmodule *mod, naf_tlv_t *tlvhead)
 	return;
 }
 
-naf_tlv_t *naf_tlv_parse(struct nafmodule *mod, naf_sbuf_t *sbuf)
+naf_tlv_t *naf_tlv_parse_limit(struct nafmodule *mod, naf_sbuf_t *sbuf, int limit)
 {
 	naf_tlv_t *tlvhead = NULL, *tlvtail = NULL;
+
+	if (limit == 0)
+		return NULL;
 
 	while (naf_sbuf_bytesremaining(sbuf) > 0) {
 		naf_tlv_t *tlv;
@@ -70,9 +73,20 @@ naf_tlv_t *naf_tlv_parse(struct nafmodule *mod, naf_sbuf_t *sbuf)
 			tlvtail = tlv;
 		} else
 			tlvhead = tlvtail = tlv;
+
+		if (limit != -1) {
+			limit--;
+			if (limit <= 0)
+				break;
+		}
 	}
 
 	return tlvhead;
+}
+
+naf_tlv_t *naf_tlv_parse(struct nafmodule *mod, naf_sbuf_t *sbuf)
+{
+	return naf_tlv_parse_limit(mod, sbuf, -1);
 }
 
 int naf_tlv_render(struct nafmodule *mod, naf_tlv_t *tlv, naf_sbuf_t *destsbuf)

@@ -16,6 +16,7 @@ typedef struct naf_tlv_s {
 naf_tlv_t *naf_tlv_new(struct nafmodule *mod, naf_u16_t type, naf_u16_t length, naf_u8_t *value);
 void naf_tlv_free(struct nafmodule *mod, naf_tlv_t *tlvhead);
 naf_tlv_t *naf_tlv_parse(struct nafmodule *mod, naf_sbuf_t *sbuf);
+naf_tlv_t *naf_tlv_parse_limit(struct nafmodule *mod, naf_sbuf_t *sbuf, int limit);
 int naf_tlv_render(struct nafmodule *mod, naf_tlv_t *tlv, naf_sbuf_t *destsbuf);
 int naf_tlv_gettotallength(struct nafmodule *mod, naf_tlv_t *tlv);
 int naf_tlv_getrenderedsize(struct nafmodule *mod, naf_tlv_t *tlv);
