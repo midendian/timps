@@ -4,6 +4,7 @@
  *
  */
 
+#include <naf/naf.h>
 #include <naf/nafmodule.h>
 #include <naf/nafrpc.h>
 
@@ -13,9 +14,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-static struct nafmodule *ourmodule = NULL;
-
-static const char prompt[] = "naf>";
+static struct nafmodule *nafconsole__module = NULL;
+static char *nafconsole__prompt = NULL;
 
 typedef struct {
 	char *name;
@@ -120,7 +120,7 @@ static int parsearg(naf_rpc_req_t *req, char *argspec, char *val)
 
 	if (type == NAF_RPC_ARGTYPE_SCALAR) {
 
-		if (naf_rpc_addarg_scalar(ourmodule, &req->inargs, name, (naf_rpcu32_t)atoi(val)) == -1) {
+		if (naf_rpc_addarg_scalar(nafconsole__module, &req->inargs, name, (naf_rpcu32_t)atoi(val)) == -1) {
 			printf("addarg_scalar failed\n");
 			return -1;
 		}
@@ -143,14 +143,14 @@ static int parsearg(naf_rpc_req_t *req, char *argspec, char *val)
 			return -1;
 		}
 
-		if (naf_rpc_addarg_bool(ourmodule, &req->inargs, name, (naf_rpcu8_t)on) == -1) {
+		if (naf_rpc_addarg_bool(nafconsole__module, &req->inargs, name, (naf_rpcu8_t)on) == -1) {
 			printf("addarg_bool failed\n");
 			return -1;
 		}
 
 	} else if (type == NAF_RPC_ARGTYPE_STRING) {
 
-		if (naf_rpc_addarg_string(ourmodule, &req->inargs, name, val) == -1) {
+		if (naf_rpc_addarg_string(nafconsole__module, &req->inargs, name, val) == -1) {
 			printf("addarg_string failed\n");
 			return -1;
 		}
@@ -243,21 +243,21 @@ static int cmd_call(char *arg)
 
 	printf("target=%s, method=%s, args=%s\n", target, method, args);
 
-	if (!(req = naf_rpc_request_new(ourmodule, target, method))) {
+	if (!(req = naf_rpc_request_new(nafconsole__module, target, method))) {
 		printf("naf_rpc_request_new failed\n");
 		return 0;
 	}
 
 	if (args && (splitandparseargs(req, args) == -1)) {
 		printf("argument parsing failed\n");
-		naf_rpc_request_free(ourmodule, req);
+		naf_rpc_request_free(nafconsole__module, req);
 		return 0;
 	}
 
 	printf("input arguments:\n");
 	dumpargs(req->inargs, 1);
 
-	if (naf_rpc_request_issue(ourmodule, req) == -1)  {
+	if (naf_rpc_request_issue(nafconsole__module, req) == -1)  {
 		printf("naf_rpc_request_issue failed\n");
 		goto out;
 	}
@@ -283,7 +283,7 @@ static int cmd_call(char *arg)
 		printf("rpc: unknown return status %d\n", req->status);
 
 out:
-	naf_rpc_request_free(ourmodule, req);
+	naf_rpc_request_free(nafconsole__module, req);
 
 	return 0;
 }
@@ -401,7 +401,17 @@ static int modinit(struct nafmodule *mod)
 {
 	struct nafconn *in;
 
-	ourmodule = mod;
+	nafconsole__module = mod;
+
+	if (naf_curappinfo.nai_name) {
+		int plen;
+
+		plen = strlen(naf_curappinfo.nai_name) + 1 + 1;
+		if (!(nafconsole__prompt = naf_malloc(mod, plen)))
+			return -1;
+		snprintf(nafconsole__prompt, plen, "%s>", naf_curappinfo.nai_name);
+	} else if (!(nafconsole__prompt = naf_strdup(mod, "naf>")))
+		return -1;
 
 
 	/*
@@ -426,7 +436,7 @@ static int modinit(struct nafmodule *mod)
 
 	rl_attempted_completion_function = (CPPFunction *)cmdcomplete;
 
-	rl_callback_handler_install(prompt, &fullline);
+	rl_callback_handler_install(nafconsole__prompt, &fullline);
 	rl_clear_signals();
 
 	return 0;
@@ -437,7 +447,7 @@ static int modshutdown(struct nafmodule *mod)
 
 	rl_callback_handler_remove();
 
-	ourmodule = NULL;
+	nafconsole__module = NULL;
 
 	return 0;
 }
