@@ -30,17 +30,17 @@
 #include <naf/naftypes.h>
 
 #define naf_byte_put8(buf, value) ( \
-		(*((buf) + 0) = ((value) >>  0) & 0xff), \
+		(*((buf) + 0) = (naf_u8_t)((value) >>  0) & 0xff), \
 		1)
 #define naf_byte_put16(buf, value) ( \
-		(*((buf) + 0) = ((value) >>  8) & 0xff), \
-		(*((buf) + 1) = ((value) >>  0) & 0xff), \
+		(*((buf) + 0) = (naf_u8_t)((value) >>  8) & 0xff), \
+		(*((buf) + 1) = (naf_u8_t)((value) >>  0) & 0xff), \
 		2)
 #define naf_byte_put32(buf, value) ( \
-		(*((buf) + 0) = ((value) >> 24) & 0xff), \
-		(*((buf) + 1) = ((value) >> 16) & 0xff), \
-		(*((buf) + 2) = ((value) >>  8) & 0xff), \
-		(*((buf) + 3) = ((value) >>  0) & 0xff), \
+		(*((buf) + 0) = (naf_u8_t)((value) >> 24) & 0xff), \
+		(*((buf) + 1) = (naf_u8_t)((value) >> 16) & 0xff), \
+		(*((buf) + 2) = (naf_u8_t)((value) >>  8) & 0xff), \
+		(*((buf) + 3) = (naf_u8_t)((value) >>  0) & 0xff), \
 		4)
 #define naf_byte_get8(buf) ( \
 		(((*((buf) + 0)) & 0xff) <<  0))

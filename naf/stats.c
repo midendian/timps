@@ -77,9 +77,9 @@ static struct naf_stat *naf__statslist = NULL;
 static int mkstatname(const char *mod, const char *name, char *buf, int buflen)
 {
 
-	if (mod && (strlen(mod)+1+strlen(name)+1 > buflen))
+	if (mod && (strlen(mod)+1+strlen(name)+1 > (naf_u16_t)buflen))
 		return -1;
-	else if (!mod && (strlen(name)+1 > buflen))
+	else if (!mod && (strlen(name)+1 > (naf_u16_t)buflen))
 		return -1;
 
 	snprintf(buf, buflen, "%s%s%s", mod ? mod : "",

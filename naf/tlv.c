@@ -208,7 +208,7 @@ int naf_tlv_addtlvraw(struct nafmodule *mod, naf_tlv_t **desthead, naf_tlv_t *sr
 
 int naf_tlv_addstring(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, const char *str)
 {
-	return naf_tlv_addraw(mod, head, type, strlen(str) + 1, (const naf_u8_t *)str);
+	return naf_tlv_addraw(mod, head, type, (naf_u16_t)(strlen(str) + 1), (const naf_u8_t *)str);
 }
 
 int naf_tlv_addu8(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_u8_t value)
@@ -252,11 +252,11 @@ int naf_tlv_addtlv(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_
 	buflen = naf_tlv_getrenderedsize(mod, tlv);
 	if (!(buf = (naf_u8_t *)naf_malloc(mod, buflen)))
 		return -1;
-	naf_sbuf_init(mod, &sb, buf, buflen);
+	naf_sbuf_init(mod, &sb, buf, (naf_u16_t)buflen);
 
 	naf_tlv_render(mod, tlv, &sb);
 
-	naf_tlv_addraw(mod, head, type, buflen, buf);
+	naf_tlv_addraw(mod, head, type, (naf_u16_t)buflen, buf);
 
 	naf_sbuf_free(mod, &sb);
 

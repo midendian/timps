@@ -140,7 +140,7 @@ int naf_sbuf_setpos(naf_sbuf_t *sbuf, naf_u16_t npos)
 {
 
 	if ((npos > sbuf->sbuf_buflen) &&
-			(naf_sbuf__extendbuf(sbuf, npos - sbuf->sbuf_buflen) == -1))
+			(naf_sbuf__extendbuf(sbuf, (naf_u16_t)(npos - sbuf->sbuf_buflen)) == -1))
 		return -1; /* XXX assert somehow */
 
 	sbuf->sbuf_pos = npos;
@@ -279,7 +279,7 @@ int naf_sbuf_putraw(naf_sbuf_t *sbuf, const naf_u8_t *inbuf, int inbuflen)
 {
 
 	if ((naf_sbuf_bytesremaining(sbuf) < inbuflen) &&
-			(naf_sbuf__extendbuf(sbuf, inbuflen) == -1))
+			(naf_sbuf__extendbuf(sbuf, (naf_u16_t)inbuflen) == -1))
 		return 0; /* XXX assert somehow */
 
 	memcpy(sbuf->sbuf_buf + sbuf->sbuf_pos, inbuf, inbuflen);

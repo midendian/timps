@@ -174,7 +174,7 @@ void __rpc_core_modmemoryuse(struct nafmodule *mod, naf_rpc_req_t *req)
 /* most unoriginal magic numbers evar. */
 #define HDR_MAGIC_START 0xbeefbeef
 #define HDR_MAGIC_END   0xfeebfeeb
-#define FTR_MAGIC_END   {0xde, 0xad, 0xbe, 0xef}
+#define FTR_MAGIC_END   {(naf_u8_t)0xde, (naf_u8_t)0xad, (naf_u8_t)0xbe, (naf_u8_t)0xef}
 struct naf_mem_header { /* try to keep sizeof naf_mem_header at multiple of 4 */
 	naf_u32_t hdrmagic1;
 	naf_u16_t hdrlen; /* so we can analyze cores of old versions */
@@ -189,7 +189,7 @@ void *naf_malloc_real(struct nafmodule *mod, int type, size_t reqsize, const cha
 	void *buf;
 	int buflen;
 	struct naf_mem_header *hdr;
-	static const char ftrmatch[] = FTR_MAGIC_END;
+	static const naf_u8_t ftrmatch[] = FTR_MAGIC_END;
 
 	if (naf_memory_debug) {
 		dvprintf(NULL, "[%s:%d] NAF_MALLOC(%p=%s, 0x%04x, %d)\n",
@@ -228,7 +228,8 @@ void *naf_malloc_real(struct nafmodule *mod, int type, size_t reqsize, const cha
 	hdr->buflen = reqsize;
 	hdr->hdrmagic2 = HDR_MAGIC_END;
 
-	memcpy(buf + sizeof(struct naf_mem_header) + reqsize, ftrmatch, sizeof(ftrmatch));
+	memcpy((naf_u8_t *)buf + sizeof(struct naf_mem_header) + reqsize,
+						ftrmatch, sizeof(ftrmatch));
 
 	if (mod && mod->memorystats) {
 		struct module_memory_stats *pms = (struct module_memory_stats *)mod->memorystats;
@@ -261,10 +262,11 @@ void *naf_malloc_real(struct nafmodule *mod, int type, size_t reqsize, const cha
 				mod ? mod->name : "(none)",
 				type,
 				reqsize,
-				buf, buf + sizeof(struct naf_mem_header));
+				(naf_u8_t *)buf,
+				(naf_u8_t *)buf + sizeof(struct naf_mem_header));
 	}
 
-	return buf + sizeof(struct naf_mem_header);
+	return (naf_u8_t *)buf + sizeof(struct naf_mem_header);
 }
 
 void naf_free_real(struct nafmodule *mod, void *ptr, const char *file, int line)
@@ -284,7 +286,7 @@ void naf_free_real(struct nafmodule *mod, void *ptr, const char *file, int line)
 	if (!ptr)
 		return; /* nothing to do */
 
-	hdr = (struct naf_mem_header *)(ptr - sizeof(struct naf_mem_header));
+	hdr = (struct naf_mem_header *)((naf_u8_t *)ptr - sizeof(struct naf_mem_header));
 	/*
 	 * This is sort of dangerous.  If the address was not allocated by us
 	 * and it starts right at a protected page boundry, even checking one
@@ -411,10 +413,14 @@ naf_flmempool_t *naf_flmp_alloc(struct nafmodule *owner, int memtype, int blklen
 		return NULL;
 	}
 
+#ifdef HAVE_MMAP
 	/* XXX should be a naf_mmap() for stats */
 	flmp->flmp_region = (naf_u8_t *)mmap(NULL,
 			flmp->flmp_regionlen, PROT_READ | PROT_WRITE,
 			MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+#else
+	flmp->flmp_region = (naf_u8_t *)malloc(flmp->flmp_regionlen);
+#endif
 	if (!flmp->flmp_region) {
 		naf_free(owner, flmp->flmp_allocmap);
 		naf_free(owner, flmp);
@@ -438,8 +444,12 @@ void naf_flmp_free(struct nafmodule *owner, naf_flmempool_t *flmp)
 	if (!flmp)
 		return;
 
+#ifdef HAVE_MMAP
 	/* XXX naf_munmap() */
 	munmap(flmp->flmp_region, flmp->flmp_regionlen);
+#else
+	free(flmp->flmp_region);
+#endif
 	naf_free(owner, flmp->flmp_allocmap);
 	naf_free(owner, flmp);
 
@@ -451,11 +461,11 @@ void *naf_flmp_blkalloc(struct nafmodule *owner, naf_flmempool_t *flmp)
 	int i, j;
 	void *block;
 
-	for (i = 0; i < flmp->flmp_allocmaplen; i++) {
+	for (i = 0; i < (int)flmp->flmp_allocmaplen; i++) {
 		if (flmp->flmp_allocmap[i] < 255 /* 2**sizeof(naf_u8_t)-1 */)
 			break;
 	}
-	if (i == flmp->flmp_allocmaplen)
+	if (i == (int)flmp->flmp_allocmaplen)
 		return NULL; /* no free blocks left */
 
 	/* start at left/top/MSb */

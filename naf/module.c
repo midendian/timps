@@ -329,7 +329,11 @@ int nafeventv(struct nafmodule *source, naf_event_t event, va_list inap)
 		if (cur->module.event) {
 			va_list ap;
 
+#ifdef NOVACOPY
+			ap = inap;
+#else
 			va_copy(ap, inap);
+#endif
 			cur->module.event(&cur->module, source, event, ap);
 			va_end(ap);
 		}
