@@ -2,14 +2,20 @@
 See:
    http://www.zigamorph.net/timps/
 
+
+=== COMPILING ===
+
 To compile:
   ./gen ; ./configure ; make
 You'll need libtool, automake, and autoconf, of course.  You'll need ncurses
 (including headers) installed to compile the nafconsole plugin, which you'll
 find very helpful in debugging.
 
+
+=== RUNNING ===
+
 For development, I run it something like this:
-   timps/timpsd -c ~/timps.conf -d -D -M les/nafconsole/.libs/libnafconsole.so
+   timps/timpsd -c ~/timps.conf -d -D -M modules/nafconsole/.libs/libnafconsole.so
 All messages will go to the log file specified in the config (see below), and
 you will be given a "timps>" prompt (thanks to nafconsole).  From this
 prompt, you can make RPC calls.  Try "call rpc->help()", for example.  The
@@ -22,6 +28,26 @@ And it will fork and detach from the terminal into the background.  Note that
 the config file path must be absolute, since daemonizing loses the current
 working directory.
 
+
+=== OFF-THE-RECORD MESSAGING ===
+
+If you want to use the OTR module, you will need to install libotr and all of
+its dependencies.  Get that from here:  http://www.cypherpunks.ca/otr/
+
+The timps-otr module is not compiled by default.  Once you build the rest of
+timps, go to modules/timpsotr and run make.
+
+Add a [module=timps-otr] section to your timps.conf that contains at least the
+keyfilepath parameter, as shown in the sample configuration.  (The directory
+specified must be writable by timps.) Then, add: 
+    -M modules/timpsotr/.libs/libtimpsotr.so
+to your timpsd command line.  (You can have multiple -M options.)
+
+WARNING: The OTR module is even more experimental/fragile than the rest of
+timps!
+
+
+=== SAMPLE CONFIGURATION ===
 
 Configuration file suitable for development (all debugging on):
 
@@ -43,6 +69,11 @@ adminlogfile=timps-message.log
 ; form 'logfilepath/timps-userlog.SERVICE.screenname'
 enableperuserlogs=false
 
+; for the OTR module
+[module=timps-otr]
+; where the private key and fingerprint store files will be created
+keyfilepath=/home/mid/tmp/timps
+debug=10
 
 [module=timps-oscar]
 debug=10
