@@ -39,6 +39,10 @@ debug=10
 logfilepath=/home/mid/tmp/timps
 ; admin log gets all messages and user (dis)connects
 adminlogfile=timps-message.log
+; this will create a log file for each local user in the path above, of the
+; form 'logfilepath/timps-userlog.SERVICE.screenname'
+enableperuserlogs=false
+
 
 [module=timps-oscar]
 debug=10

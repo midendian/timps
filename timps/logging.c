@@ -12,6 +12,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <naf/nafmodule.h>
 #include <naf/nafconfig.h>
@@ -22,6 +23,9 @@
 static struct nafmodule *timps_logging__module = NULL;
 static char *timps_logging__adminlogfn = NULL;
 static FILE *timps_logging__adminlogstream = NULL;
+
+#define TLOGGING_ENABLEPERUSERLOGS_DEFAULT 0
+static int timps_logging__enableuserlogs = TLOGGING_ENABLEPERUSERLOGS_DEFAULT;
 
 
 static char *myctime(void)
@@ -89,20 +93,69 @@ static void tlogging__logmsg_admin(struct nafmodule *mod, struct gnrmsg *gm, str
 	return;
 }
 
+static void tlogging__logmsg_peruser(struct nafmodule *mod, FILE *f, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
+{
+	static const char *typenames[] = {
+		"unknown", "message", "group-invite", "group-message",
+		"group-join", "group-part", "rendezvous",
+	};
+	const char *typename = typenames[0];
+
+	if (gm->type == GNR_MSG_MSGTYPE_IM) typename = typenames[1];
+	else if (gm->type == GNR_MSG_MSGTYPE_GROUPINVITE) typename = typenames[2];
+	else if (gm->type == GNR_MSG_MSGTYPE_GROUPIM) typename = typenames[3];
+	else if (gm->type == GNR_MSG_MSGTYPE_GROUPJOIN) typename = typenames[4];
+	else if (gm->type == GNR_MSG_MSGTYPE_GROUPPART) typename = typenames[5];
+	else if (gm->type == GNR_MSG_MSGTYPE_RENDEZVOUS) typename = typenames[6];
+
+	fprintf(f, "%s | %s | %s[%s] | %s[%s] | %s | %s\n",
+			myctime(),
+
+			typename,
+
+			gmhi->srcnode ? gmhi->srcnode->name : gm->srcname,
+			gmhi->srcnode ? gmhi->srcnode->service : gm->srcnameservice,
+
+			gmhi->destnode ? gmhi->destnode->name : gm->destname,
+			gmhi->destnode ? gmhi->destnode->service : gm->destnameservice,
+
+			gm->msgtexttype ? gm->msgtexttype : "text/plain",
+			gm->msgtext);
+	fflush(f);
+
+	return;
+}
+
 static int
 tlogging_msglogger(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
 {
 
+	/* admin log */
 	if (timps_logging__adminlogstream)
 		tlogging__logmsg_admin(mod, gm, gmhi);
 
-	/* XXX per-user log */
+	/* per-user logs (both sides) */
+	if (gmhi->srcnode) {
+		FILE *peruser = NULL;
+
+		gnr_node_tag_fetch(mod, gmhi->srcnode, "gnrnode.userlogstream", NULL, (void **)&peruser);
+		if (peruser)
+			tlogging__logmsg_peruser(mod, peruser, gm, gmhi);
+	}
+	if (gmhi->destnode) {
+		FILE *peruser = NULL;
+
+		gnr_node_tag_fetch(mod, gmhi->destnode, "gnrnode.userlogstream", NULL, (void **)&peruser);
+		if (peruser)
+			tlogging__logmsg_peruser(mod, peruser, gm, gmhi);
+	}
+
 	/* XXX per-session log */
 
 	return 0;
 }
 
-static void tlogging__lognodeevent_admin(struct nafmodule *mod, struct gnrnode *node, gnr_event_t event, naf_u32_t reason)
+static void tlogging__lognodeevent(struct nafmodule *mod, FILE *f, struct gnrnode *node, gnr_event_t event, naf_u32_t reason)
 {
 	static const char *eventnames[] = {
 		"unknown event", "user connected", "user disconnected",
@@ -127,8 +180,7 @@ static void tlogging__lognodeevent_admin(struct nafmodule *mod, struct gnrnode *
 			rstr = offlinereasons[2];
 	}
 
-	fprintf(timps_logging__adminlogstream,
-			"%s  %s:  %s[%s][%s][%s%s%s] %s%s%s\n",
+	fprintf(f, "%s  %s:  %s[%s][%s][%s%s%s] %s%s%s\n",
 			myctime(),
 			eventname,
 			node->name, node->service,
@@ -137,30 +189,104 @@ static void tlogging__lognodeevent_admin(struct nafmodule *mod, struct gnrnode *
 			GNR_NODE_METRIC_ISPEERED(node->metric) ? "peer" : "",
 			(node->metric == GNR_NODE_METRIC_MAX) ? "remote" : "",
 			rstr ? "(" : "", rstr ? rstr : "", rstr ? ")" : "");
-	fflush(timps_logging__adminlogstream);
+	fflush(f);
 
 	return;
+}
+
+static char *mkuserlogfn(struct nafmodule *mod, struct gnrnode *node)
+{
+	static const char prefix[] = {"timps-userlog."};
+	char *fn, *nc;
+	const char *path, *c;
+	int fnlen;
+
+	path = naf_config_getmodparmstr(mod, "logfilepath");
+	fnlen = (path ? strlen(path) : 0) + 1 + strlen(prefix) + strlen(node->service) + 1 + strlen(node->name) + 1;
+	if (!(fn = naf_malloc(mod, fnlen)))
+		return NULL;
+	snprintf(fn, fnlen, "%s/%s%s.", path ? path : "", prefix, node->service);
+	nc = fn + strlen(fn);
+	for (c = node->name; *c; c++) { /* remove spaces, make lowercase */
+		if (*c != ' ')
+			*nc = tolower(*c), nc++;
+	}
+	*nc = '\0';
+
+	return fn;
 }
 
 static void
 tlogging_nodeeventhandler(struct nafmodule *mod, struct gnr_event_info *gei)
 {
 	struct gnr_event_ei_nodechange *einc;
+	FILE *peruser = NULL;
 
 	einc = (struct gnr_event_ei_nodechange *)gei->gei_extinfo;
 
-	if (timps_logging__adminlogstream) {
-		tlogging__lognodeevent_admin(mod, gei->gei_node, gei->gei_event, 
-				einc ? einc->reason :
-					GNR_NODE_OFFLINE_REASON_UNKNOWN);
+	gnr_node_tag_fetch(mod, gei->gei_node, "gnrnode.userlogstream", NULL, (void **)&peruser);
+
+	/* only do logs for local users */
+	if ((gei->gei_event == GNR_EVENT_NODEUP) && !peruser &&
+			(gei->gei_node->metric == GNR_NODE_METRIC_LOCAL) &&
+			timps_logging__enableuserlogs) {
+		char *fn;
+
+		fn = mkuserlogfn(mod, gei->gei_node);
+		if (!fn || !(peruser = fopen(fn, "a")) ||
+				(gnr_node_tag_add(mod, gei->gei_node, "gnrnode.userlogstream", 'V', (void *)peruser) == -1)) {
+			dvprintf(mod, "unable to open log file '%s' for user '%s'\n", fn, gei->gei_node->name);
+			if (peruser) {
+				fclose(peruser);
+				peruser = NULL;
+			}
+		}
+		naf_free(mod, fn);
 	}
 
-	/* XXX per-user log */
+	if (timps_logging__adminlogstream) {
+		tlogging__lognodeevent(mod, timps_logging__adminlogstream,
+				gei->gei_node, gei->gei_event,
+				einc ? einc->reason : GNR_NODE_OFFLINE_REASON_UNKNOWN);
+	}
+
+	if (peruser) {
+		tlogging__lognodeevent(mod, peruser, gei->gei_node,
+				gei->gei_event, einc ? einc->reason : GNR_NODE_OFFLINE_REASON_UNKNOWN);
+	}
+
+	if ((gei->gei_event == GNR_EVENT_NODEDOWN) && peruser) {
+		gnr_node_tag_remove(mod, gei->gei_node, "gnrnode.userlogstream", NULL, (void **)&peruser);
+		fclose(peruser);
+		peruser = NULL;
+	}
+
 	/* XXX per-session log */
 
 	return;
 }
 
+
+static void
+freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, void *tagdata)
+{
+
+	if (strcmp(tagname, "gnrnode.userlogstream") == 0) {
+		FILE *f = (FILE *)tagdata;
+
+		/*
+		 * This should never actually happen, since we remove the
+		 * tag in the NODEDOWN event.
+		 */
+		fclose(f);
+
+	} else {
+
+		dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
+	}
+
+	return;
+}
 
 static int
 modinit(struct nafmodule *mod)
@@ -205,6 +331,7 @@ signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
 
 	if (signum == NAF_SIGNAL_CONFCHANGE) {
 		char *npath, *nadminfn, *nadminfn_full = NULL;
+		int i;
 
 		npath = naf_config_getmodparmstr(mod, "logfilepath");
 		if ((nadminfn = naf_config_getmodparmstr(mod, "adminlogfile"))) {
@@ -248,6 +375,17 @@ signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
 				fflush(timps_logging__adminlogstream);
 			}
 		}
+
+		/*
+		 * XXX Currently, any changes made to the log file path or
+		 * enabling/disabling per-user logs will not apply to users
+		 * already online.  Their logs will stay open (closed)
+		 * until they log out (log in) next.
+		 */
+		if ((i = naf_config_getmodparmbool(mod, "enableperuserlogs")) == -1)
+			i = TLOGGING_ENABLEPERUSERLOGS_DEFAULT;
+		timps_logging__enableuserlogs = i;
+
 	}
 
 	return;
@@ -261,6 +399,7 @@ modfirst(struct nafmodule *mod)
 	mod->init = modinit;
 	mod->shutdown = modshutdown;
 	mod->signal = signalhandler;
+	mod->freetag = freetag;
 
 	return 0;
 }
