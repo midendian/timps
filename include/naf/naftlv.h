@@ -26,6 +26,8 @@ naf_u8_t naf_tlv_getasu8(struct nafmodule *mod, naf_tlv_t *head, naf_u16_t type)
 naf_u16_t naf_tlv_getasu16(struct nafmodule *mod, naf_tlv_t *head, naf_u16_t type);
 naf_u32_t naf_tlv_getasu32(struct nafmodule *mod, naf_tlv_t *head, naf_u16_t type);
 
+naf_tlv_t *naf_tlv_remove(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type);
+
 int naf_tlv_addraw(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_u16_t length, const naf_u8_t *value);
 int naf_tlv_addstring(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, const char *str);
 int naf_tlv_addnoval(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type);

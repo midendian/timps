@@ -110,6 +110,21 @@ int naf_tlv_gettotallength(struct nafmodule *mod, naf_tlv_t *tlv)
 	return n;
 }
 
+naf_tlv_t *naf_tlv_remove(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type)
+{
+	naf_tlv_t *cur, **prev;
+
+	for (prev = head; (cur = *prev); ) {
+		if (cur->tlv_type == type) {
+			*prev = cur->tlv_next;
+			return cur;
+		}
+		prev = &cur->tlv_next;
+	}
+
+	return NULL;
+}
+
 int naf_tlv_addraw(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_u16_t length, const naf_u8_t *value)
 {
 	naf_tlv_t *tlv;
@@ -213,6 +228,7 @@ naf_tlv_t *naf_tlv_get(struct nafmodule *mod, naf_tlv_t *head, naf_u16_t type)
 	while (head) {
 		if (head->tlv_type == type)
 			return head;
+		head = head->tlv_next;
 	}
 
 	return NULL;
