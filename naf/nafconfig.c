@@ -223,7 +223,7 @@ char *naf_config_getmodparmstr(struct nafmodule *mod, const char *parm)
 	return naf_config_getmodparmraw(mod->name, parm);
 }
 
-int config_getmodparmbool(struct nafmodule *mod, const char *parm)
+int naf_config_getmodparmbool(struct nafmodule *mod, const char *parm)
 {
 	char *val;
 
