@@ -60,6 +60,7 @@ AC_OUTPUT([
 	modules/Makefile
 	modules/nafbasicmodule/Makefile
 	modules/nafconsole/Makefile
+	modules/timpsotr/Makefile
 	naf/Makefile
 	gnr/Makefile
 	timps/oscar/Makefile
