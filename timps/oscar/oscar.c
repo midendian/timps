@@ -6,6 +6,7 @@
 #include <naf/nafmodule.h>
 #include <naf/nafconfig.h>
 #include <gnr/gnrmsg.h>
+#include <gnr/gnrnode.h>
 #include <naf/naftlv.h>
 
 #include "oscar.h"
@@ -68,9 +69,16 @@ freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, 
 		naf_tlv_free(mod, (naf_tlv_t *)tagdata);
 	else if (strcmp(tagname, "conn.loginsnacid") == 0)
 		; /* an int */
-	else if (strcmp(tagname, "conn.screenname") == 0)
-		naf_free(mod, tagdata); /* string */
-	else
+	else if (strcmp(tagname, "conn.screenname") == 0) {
+		char *sn = (char *)tagdata;
+		struct gnrnode *node;
+
+		if ((node = gnr_node_findbyname(sn, OSCARSERVICE)))
+			gnr_node_offline(node, GNR_NODE_OFFLINE_REASON_DISCONNECTED);
+
+		naf_free(mod, sn); 
+
+	} else
 		dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
 
 	return;

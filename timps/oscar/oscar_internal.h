@@ -13,5 +13,8 @@ extern char *timps_oscar__authorizer;
 #define TOSCAR_SERVTYPE_BOS     0x0009
 #define TOSCAR_SERVTYPE_AUTH    0x0017
 
+/* the service name we use for gnr nodes/messages */
+#define OSCARSERVICE "AIM"
+
 #endif /* ndef __OSCAR_INTERNAL_H__ */
 

@@ -3,23 +3,12 @@
 
 #include <naf/nafmodule.h>
 #include <naf/naftlv.h>
+#include <gnr/gnrnode.h>
 
 #include "oscar_internal.h"
 #include "snac.h"
 #include "flap.h"
 #include "ckcache.h"
-
-static int
-toscar_snachandler_0004_0006(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
-{
-	return HRET_FORWARD;
-}
-
-static int
-toscar_snachandler_0004_0007(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
-{
-	return HRET_FORWARD;
-}
 
 static int
 toscar_newsnacsb(struct nafmodule *mod, naf_sbuf_t *sb, naf_u16_t group, naf_u16_t subtype, naf_u16_t flags, naf_u32_t id)
@@ -37,6 +26,52 @@ toscar_newsnacsb(struct nafmodule *mod, naf_sbuf_t *sb, naf_u16_t group, naf_u16
 	naf_sbuf_put32(sb, id);
 
 	return 0;
+}
+
+/*
+ * 0001/0002 (client->server) Client Online
+ *
+ * Although the client will probably make more requests to learn about its
+ * environment after this, reception of the Client Online message is when the
+ * server will consider the client to be online, and, in the case of a BOS
+ * connection, light them up on the buddy lists.
+ */
+static int
+toscar_snachandler_0001_0002(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
+{
+	char *sn = NULL;
+	struct gnrnode *node;
+
+	if (!(conn->type & NAF_CONN_TYPE_CLIENT))
+		return HRET_ERROR;
+
+	if ((naf_conn_tag_fetch(mod, conn->endpoint, "conn.screenname", NULL, (void **)&sn) == -1) || !sn) {
+		if (timps_oscar__debug > 0)
+			dvprintf(mod, "[cid %lu] received Client Online on connection with no user info; killing\n", conn->cid);
+		return HRET_ERROR;
+	}
+
+	node = gnr_node_online(mod, sn, OSCARSERVICE,
+				GNR_NODE_FLAG_NONE, GNR_NODE_METRIC_LOCAL);
+	if (!node) {
+		if (timps_oscar__debug > 0)
+			dvprintf(mod, "[cid %lu] [%s] unable to create gnrnode; disconnecting\n", conn->cid, sn);
+		return HRET_ERROR;
+	}
+
+	return HRET_FORWARD;
+}
+
+static int
+toscar_snachandler_0004_0006(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
+{
+	return HRET_FORWARD;
+}
+
+static int
+toscar_snachandler_0004_0007(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
+{
+	return HRET_FORWARD;
 }
 
 static int
@@ -250,6 +285,7 @@ static struct snachandler {
 	naf_u16_t subtype;
 	toscar_snachandler_t handler;
 } toscar__snachandlers[] = {
+	{0x0001, 0x0002, toscar_snachandler_0001_0002},
 	{0x0004, 0x0006, toscar_snachandler_0004_0006},
 	{0x0004, 0x0007, toscar_snachandler_0004_0007},
 	{0x0017, 0x0003, toscar_snachandler_0017_0003},

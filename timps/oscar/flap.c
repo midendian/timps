@@ -242,7 +242,8 @@ toscar_flap_handlechan1__newconn(struct nafmodule *mod, struct nafconn *conn, na
 
 	if (sn) {
 		/* XXX store full userinfo here */
-		if (naf_conn_tag_add(mod, conn, "conn.screenname", 'S', sn) == -1) {
+		/* Note that the user information is attached to the server connection. */
+		if (naf_conn_tag_add(mod, conn->endpoint, "conn.screenname", 'S', sn) == -1) {
 			ret = HRET_ERROR;
 			goto out;
 		}
