@@ -188,7 +188,7 @@ int naf_config_setparm(const char *parm, const char *data)
 		freeparm(p);
 		return -1;
 	}
-			
+
 	p->next = parmlist;
 	parmlist = p;
 
