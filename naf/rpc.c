@@ -18,11 +18,11 @@ static naf_rpc_arg_t *naf_rpc_arg_new(struct nafmodule *mod, const char *name)
 {
 	naf_rpc_arg_t *arg;
 
-	if (!(arg = naf_malloc(mod, NAF_MEM_TYPE_GENERIC, sizeof(naf_rpc_arg_t))))
+	if (!(arg = naf_malloc(mod, sizeof(naf_rpc_arg_t))))
 		return NULL;
 	memset(arg, 0, sizeof(naf_rpc_arg_t));
 
-	if (!(arg->name = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, name))) {
+	if (!(arg->name = naf_strdup(mod, name))) {
 		naf_free(mod, arg);
 		return NULL;
 	}
@@ -78,16 +78,16 @@ naf_rpc_req_t *naf_rpc_request_new(struct nafmodule *mod, const char *targetmod,
 {
 	naf_rpc_req_t *req;
 
-	if (!(req = naf_malloc(mod, NAF_MEM_TYPE_GENERIC, sizeof(naf_rpc_req_t))))
+	if (!(req = naf_malloc(mod, sizeof(naf_rpc_req_t))))
 		return NULL;
 	memset(req, 0, sizeof(naf_rpc_req_t));
 
-	if (!(req->target = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, targetmod))) {
+	if (!(req->target = naf_strdup(mod, targetmod))) {
 		naf_rpc_request_free(mod, req);
 		return NULL;
 	}
 
-	if (!(req->method = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, method))) {
+	if (!(req->method = naf_strdup(mod, method))) {
 		naf_rpc_request_free(mod, req);
 		return NULL;
 	}
@@ -142,7 +142,7 @@ static struct rpcmoduleinfo *fetchinfo(struct nafmodule *mod)
 
 	if ((naf_module_tag_fetch(ourmodule, mod, "module.rpi", NULL, (void **)&rpi) == -1) || !rpi) {
 
-		if (!(rpi = naf_malloc(ourmodule, NAF_MEM_TYPE_GENERIC, sizeof(struct rpcmoduleinfo))))
+		if (!(rpi = naf_malloc(ourmodule, sizeof(struct rpcmoduleinfo))))
 			return NULL;
 		memset(rpi, 0, sizeof(struct rpcmoduleinfo));
 
@@ -174,16 +174,16 @@ static int addmethod(struct rpcmoduleinfo *rpi, const char *name, naf_rpc_method
 	if (findmethod(rpi, name))
 		return 0;
 
-	if (!(rm = naf_malloc(ourmodule, NAF_MEM_TYPE_GENERIC, sizeof(struct rpcmethod))))
+	if (!(rm = naf_malloc(ourmodule, sizeof(struct rpcmethod))))
 		return -1;
 	memset(rm, 0, sizeof(struct rpcmethod));
 
-	if (!(rm->name = naf_strdup(ourmodule, NAF_MEM_TYPE_GENERIC, name))) {
+	if (!(rm->name = naf_strdup(ourmodule, name))) {
 		naf_free(ourmodule, rm);
 		return -1;
 	}
 	rm->func = func;
-	if (desc && !(rm->desc = naf_strdup(ourmodule, NAF_MEM_TYPE_GENERIC, desc))) {
+	if (desc && !(rm->desc = naf_strdup(ourmodule, desc))) {
 		naf_free(ourmodule, rm->name);
 		naf_free(ourmodule, rm);
 		return -1;
@@ -318,7 +318,7 @@ int naf_rpc_addarg_generic(struct nafmodule *mod, naf_rpc_arg_t **head, const ch
 
 	narg->type = NAF_RPC_ARGTYPE_GENERIC;
 	narg->length = datalen;
-	if (!(narg->data.generic = naf_malloc(mod, NAF_MEM_TYPE_GENERIC, datalen))) {
+	if (!(narg->data.generic = naf_malloc(mod, datalen))) {
 		naf_rpc_arg_free(mod, narg);
 		return -1;
 	}
@@ -338,7 +338,7 @@ int naf_rpc_addarg_string(struct nafmodule *mod, naf_rpc_arg_t **head, const cha
 
 	narg->type = NAF_RPC_ARGTYPE_STRING;
 	narg->length = strlen(string) + 1;
-	if (!(narg->data.string = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, string))) {
+	if (!(narg->data.string = naf_strdup(mod, string))) {
 		naf_rpc_arg_free(mod, narg);
 		return -1;
 	}

@@ -318,17 +318,16 @@ void naf_free_real(struct nafmodule *mod, void *ptr, const char *file, int line)
 	return;
 }
 
-char *naf_strdup(struct nafmodule *mod, int type, const char *s)
+char *naf_strdup_type(struct nafmodule *mod, int type, const char *s)
 {
 	char *r;
 
-	if (!(r = naf_malloc(mod, type, strlen(s) + 1)))
+	if (!(r = naf_malloc_type(mod, type, strlen(s) + 1)))
 		return NULL;
 	memcpy(r, s, strlen(s) + 1);
 
 	return r;
 }
-
 
 naf_flmempool_t *naf_flmp_alloc(struct nafmodule *owner, int memtype, int blklen, int blkcount)
 {
@@ -349,7 +348,7 @@ naf_flmempool_t *naf_flmp_alloc(struct nafmodule *owner, int memtype, int blklen
 		return NULL;
 
 
-	flmp = (naf_flmempool_t *)naf_malloc(owner, memtype, sizeof(naf_flmempool_t));
+	flmp = (naf_flmempool_t *)naf_malloc_type(owner, memtype, sizeof(naf_flmempool_t));
 	if (!flmp)
 		return NULL;
 
@@ -366,7 +365,7 @@ naf_flmempool_t *naf_flmp_alloc(struct nafmodule *owner, int memtype, int blklen
 			flmp->flmp_allocmaplen);
 #endif
 
-	flmp->flmp_allocmap = (naf_u8_t *)naf_malloc(owner, memtype, flmp->flmp_allocmaplen);
+	flmp->flmp_allocmap = (naf_u8_t *)naf_malloc_type(owner, memtype, flmp->flmp_allocmaplen);
 	if (!flmp->flmp_allocmap) {
 		naf_free(owner, flmp);
 		return NULL;

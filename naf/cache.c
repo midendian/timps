@@ -55,7 +55,7 @@ static struct cachepair *cp_alloc(void *key, void *value)
 {
 	struct cachepair *cp;
 
-	if (!(cp = naf_malloc(ourmodule, NAF_MEM_TYPE_GENERIC, sizeof(struct cachepair))))
+	if (!(cp = naf_malloc(ourmodule, sizeof(struct cachepair))))
 		return NULL;
 	memset(cp, 0, sizeof(struct cachepair));
 
@@ -83,7 +83,7 @@ static struct cachelist *cl_alloc(naf_cache_lid_t lid, int timeout, naf_cache_fr
 {
 	struct cachelist *cl;
 
-	if (!(cl = naf_malloc(ourmodule, NAF_MEM_TYPE_GENERIC, sizeof(struct cachelist))))
+	if (!(cl = naf_malloc(ourmodule, sizeof(struct cachelist))))
 		return NULL;
 	memset(cl, 0, sizeof(struct cachelist));
 
@@ -124,7 +124,7 @@ static struct cachetagdata *ctd_alloc(void)
 {
 	struct cachetagdata *ctd;
 
-	if (!(ctd = naf_malloc(ourmodule, NAF_MEM_TYPE_GENERIC, sizeof(struct cachetagdata))))
+	if (!(ctd = naf_malloc(ourmodule, sizeof(struct cachetagdata))))
 		return NULL;
 	memset(ctd, 0, sizeof(struct cachetagdata));
 

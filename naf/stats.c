@@ -57,7 +57,7 @@ static int registerstat(struct nafmodule *owner, const char *name, int type, voi
 {
 	struct naf_stat *nps;
 
-	if (!(nps = naf_malloc(ourmodule, NAF_MEM_TYPE_GENERIC, sizeof(struct naf_stat))))
+	if (!(nps = naf_malloc(ourmodule, sizeof(struct naf_stat))))
 		return -1;
 	memset(nps, 0, sizeof(struct naf_stat));
 

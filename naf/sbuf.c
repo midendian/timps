@@ -31,7 +31,7 @@ int naf_sbuf_init(struct nafmodule *mod, naf_sbuf_t *sbuf, naf_u8_t *buf, naf_u1
 			buflen = NAF_SBUF_DEFAULT_BUFLEN;
 
 		/* XXX don't assume NETBUF */
-		if (!(sbuf->sbuf_buf = naf_malloc(mod, NAF_MEM_TYPE_NETBUF, buflen)))
+		if (!(sbuf->sbuf_buf = naf_malloc_type(mod, NAF_MEM_TYPE_NETBUF, buflen)))
 			return -1;
 		sbuf->sbuf_buflen = buflen;
 		sbuf->sbuf_flags |= NAF_SBUF_FLAG_FREEBUF | NAF_SBUF_FLAG_AUTORESIZE;
@@ -74,7 +74,7 @@ static int naf_sbuf__extendbuf(naf_sbuf_t *sbuf, naf_u16_t bytesneeded)
 
 	/* XXX XXX need a naf_realloc() */
 	/* XXX don't assume NETBUF */
-	if (!(nbuf = naf_malloc(sbuf->sbuf_owner, NAF_MEM_TYPE_NETBUF, nbuflen)))
+	if (!(nbuf = naf_malloc_type(sbuf->sbuf_owner, NAF_MEM_TYPE_NETBUF, nbuflen)))
 		return -1;
 	memcpy(nbuf, sbuf->sbuf_buf, sbuf->sbuf_buflen);
 	naf_free(sbuf->sbuf_owner, sbuf->sbuf_buf);
@@ -221,7 +221,7 @@ naf_u8_t *naf_sbuf_getraw(struct nafmodule *mod, naf_sbuf_t *sbuf, naf_u16_t len
 {
 	naf_u8_t *outbuf;
 
-	if (!(outbuf = naf_malloc(mod, NAF_MEM_TYPE_GENERIC, len)))
+	if (!(outbuf = naf_malloc(mod, len)))
 		return NULL;
 
 	if (naf_sbuf_getrawbuf(sbuf, outbuf, len) < len) {
@@ -236,7 +236,7 @@ char *naf_sbuf_getstr(struct nafmodule *mod, naf_sbuf_t *sbuf, naf_u16_t len)
 {
 	naf_u8_t *outbuf;
 
-	if (!(outbuf = naf_malloc(mod, NAF_MEM_TYPE_GENERIC, len + 1)))
+	if (!(outbuf = naf_malloc(mod, len + 1)))
 		return NULL;
 
 	if (naf_sbuf_getrawbuf(sbuf, outbuf, len) < len) {

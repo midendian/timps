@@ -476,7 +476,7 @@ static struct nafconn *naf_conn_alloc(void)
 {
 	struct nafconn *nc;
 
-	if (!(nc = (struct nafconn *)naf_malloc(ourmodule, NAF_MEM_TYPE_GENERIC, sizeof(struct nafconn))))
+	if (!(nc = (struct nafconn *)naf_malloc(ourmodule, sizeof(struct nafconn))))
 		return NULL;
 	memset(nc, 0, sizeof(struct nafconn));
 
@@ -735,9 +735,9 @@ char *naf_conn_getlocaladdrstr(struct nafmodule *mod, struct nafconn *conn)
 	int port = -1;
 
 	if ((ip = naf_config_getmodparmstr(mod, "extipaddr")) && strlen(ip))
-		ret = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, ip);
+		ret = naf_strdup(mod, ip);
 	else
-		ret = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, inet_ntoa(((struct sockaddr_in *)&conn->localendpoint)->sin_addr));
+		ret = naf_strdup(mod, inet_ntoa(((struct sockaddr_in *)&conn->localendpoint)->sin_addr));
 
 	if (!ret)
 		return NULL;
@@ -752,7 +752,7 @@ char *naf_conn_getlocaladdrstr(struct nafmodule *mod, struct nafconn *conn)
 	if (!index(ret, ':')) { 
 		char *newip;
 
-		if ((newip = naf_malloc(mod, NAF_MEM_TYPE_GENERIC, strlen(ret)+1+strlen("65535")+1))) {
+		if ((newip = naf_malloc(mod, strlen(ret)+1+strlen("65535")+1))) {
 			snprintf(newip, strlen(ret)+1+strlen("65535")+1,
 					"%s:%u", ret, port);
 			naf_free(mod, ret);
@@ -1108,7 +1108,7 @@ static int listenport_isconfigured(struct nafmodule *mod, unsigned short port)
 {
 	char *conf, *cur;
 
-	if (!(conf = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, naf_config_getmodparmstr(mod, "listenports"))))
+	if (!(conf = naf_strdup(mod, naf_config_getmodparmstr(mod, "listenports"))))
 		return 0;
 
 	cur = strtok(conf, ",");
@@ -1165,7 +1165,7 @@ static void cleanlisteners(struct nafmodule *mod)
 		return;
 	}
 
-	if (!(conf = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, conf)))
+	if (!(conf = naf_strdup(mod, conf)))
 		return;
 
 	cur = strtok(conf, ",");

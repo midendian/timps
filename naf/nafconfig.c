@@ -128,11 +128,11 @@ static struct parm_s *allocparm(const char *parm)
 {
 	struct parm_s *np;
 
-	if (!(np = naf_malloc(ourmodule, NAF_MEM_TYPE_GENERIC, sizeof(struct parm_s))))
+	if (!(np = naf_malloc(ourmodule, sizeof(struct parm_s))))
 		return NULL;
 	memset(np, 0, sizeof(struct parm_s));
 
-	if (!(np->parm = naf_strdup(ourmodule, NAF_MEM_TYPE_GENERIC, parm))) {
+	if (!(np->parm = naf_strdup(ourmodule, parm))) {
 		naf_free(ourmodule, np);
 		return NULL;
 	}
@@ -154,7 +154,7 @@ int naf_config_setparm(const char *parm, const char *data)
 	if (!(p = allocparm(parm)))
 		return -1;
 
-	if (!(p->val = naf_strdup(ourmodule, NAF_MEM_TYPE_GENERIC, data))) {
+	if (!(p->val = naf_strdup(ourmodule, data))) {
 		freeparm(p);
 		return -1;
 	}
@@ -284,7 +284,7 @@ static int readconfig(struct nafmodule *mod, const char *cfn, int including)
 	if (cfn && !including) {
 		if (conffilename)
 			naf_free(mod, conffilename);
-		conffilename = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, cfn);
+		conffilename = naf_strdup(mod, cfn);
 	}
 
 	if (!including && !cfn)

@@ -63,10 +63,10 @@ static int logging_start(struct nafmodule *mod, char *filename, char **fnret, FI
 					naf_config_getmodparmstr(mod, "logfilepath"),
 					filename);
 
-			*fnret = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, buf);
+			*fnret = naf_strdup(mod, buf);
 
 		} else if (filename) {
-			*fnret = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, filename);
+			*fnret = naf_strdup(mod, filename);
 		} else if (!filename && !*fnret) {
 			*streamret = stderr;
 		} 

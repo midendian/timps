@@ -57,7 +57,7 @@ naf_childproc_t *naf_childproc_create(struct nafmodule *mod, naf_u16_t streamfla
 {
 	naf_childproc_t *cp;
 
-	if (!(cp = naf_malloc(mod, NAF_MEM_TYPE_GENERIC, sizeof(naf_childproc_t))))
+	if (!(cp = naf_malloc(mod, sizeof(naf_childproc_t))))
 		return NULL;
 	memset(cp, 0, sizeof(naf_childproc_t));
 
@@ -306,7 +306,7 @@ int naf_childproc_system(naf_childproc_t *cp, const char *cmdline)
 	if (cp->status != NAF_CHILDPROC_STATUS_NOTSTARTED)
 		return -1;
 
-	if (!(cp->cmdline = naf_strdup(cp->owner, NAF_MEM_TYPE_GENERIC, cmdline)))
+	if (!(cp->cmdline = naf_strdup(cp->owner, cmdline)))
 		return -1;
 
 	return naf_childproc_fork(cp, naf_childproc_system_childmainfunc);

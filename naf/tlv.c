@@ -10,7 +10,7 @@ naf_tlv_t *naf_tlv_new(struct nafmodule *mod, naf_u16_t type, naf_u16_t length, 
 {
 	naf_tlv_t *tlv;
 
-	if (!(tlv = (naf_tlv_t *)naf_malloc(mod, NAF_MEM_TYPE_GENERIC, sizeof(naf_tlv_t))))
+	if (!(tlv = (naf_tlv_t *)naf_malloc(mod, sizeof(naf_tlv_t))))
 		return NULL;
 
 	tlv->tlv_type = type;
@@ -116,7 +116,7 @@ int naf_tlv_addraw(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_
 	naf_u8_t *vcopy = NULL;
 
 	if (length) {
-		if (!(vcopy = (naf_u8_t *)naf_malloc(mod, NAF_MEM_TYPE_GENERIC, length)))
+		if (!(vcopy = (naf_u8_t *)naf_malloc(mod, length)))
 			return -1;
 		memcpy(vcopy, value, length);
 	}
@@ -194,7 +194,7 @@ int naf_tlv_addtlv(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_
 	naf_sbuf_t sb;
 
 	buflen = naf_tlv_getrenderedsize(mod, tlv);
-	if (!(buf = (naf_u8_t *)naf_malloc(mod, NAF_MEM_TYPE_GENERIC, buflen)))
+	if (!(buf = (naf_u8_t *)naf_malloc(mod, buflen)))
 		return -1;
 	naf_sbuf_init(mod, &sb, buf, buflen);
 
@@ -226,7 +226,7 @@ char *naf_tlv_getasstring(struct nafmodule *mod, naf_tlv_t *head, naf_u16_t type
 	if (!(tlv = naf_tlv_get(mod, head, type)))
 		return NULL;
 
-	if (!(str = (char *)naf_malloc(mod, NAF_MEM_TYPE_GENERIC, tlv->tlv_length + 1)))
+	if (!(str = (char *)naf_malloc(mod, tlv->tlv_length + 1)))
 		return NULL;
 	memcpy(str, tlv->tlv_value, tlv->tlv_length);
 	str[tlv->tlv_length] = '\0';

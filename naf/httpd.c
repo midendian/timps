@@ -45,7 +45,7 @@ static int reqmonitorbuf(struct nafmodule *mod, struct nafconn *conn)
 {
 	char *nbuf;
 
-	if (!(nbuf = naf_malloc(mod, NAF_MEM_TYPE_NETBUF, SOAPMONBUFLEN)))
+	if (!(nbuf = naf_malloc_type(mod, NAF_MEM_TYPE_NETBUF, SOAPMONBUFLEN)))
 		return -1;
 	if (naf_conn_reqread(conn, nbuf, SOAPMONBUFLEN, 0) == -1) {
 		naf_free(mod, nbuf);
@@ -60,7 +60,7 @@ static int reqsoapbuf(struct nafmodule *mod, struct nafconn *conn, char *inbuf)
 	char *nbuf = NULL;
 
 	if (!inbuf) {
-		if (!(nbuf = naf_malloc(mod, NAF_MEM_TYPE_NETBUF, SOAPBUFLEN)))
+		if (!(nbuf = naf_malloc_type(mod, NAF_MEM_TYPE_NETBUF, SOAPBUFLEN)))
 			return -1;
 	}
 	if (naf_conn_reqread(conn, inbuf ? inbuf : nbuf, SOAPBUFLEN, 0) == -1) {
@@ -114,13 +114,13 @@ static char *http_getnextarg(struct nafmodule *mod, char **cmd)
 		len = end - *cmd;
 
 		/* XXX need checking here to make sure evil doesn't fuck with us */
-		if (!(ret = (char *)naf_malloc(mod, NAF_MEM_TYPE_GENERIC, len+1)))
+		if (!(ret = (char *)naf_malloc(mod, len+1)))
 			goto out;
 		memcpy(ret, *cmd, len);
 		ret[len] = '\0';
 
 	} else
-		ret = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, *cmd);
+		ret = naf_strdup(mod, *cmd);
 
 out:
 	if (end)
@@ -222,15 +222,15 @@ static struct httpdpage *naf_httpd_page__new(struct nafmodule *mod, const char *
 {
 	struct httpdpage *hp;
 
-	if (!(hp = naf_malloc(mod, NAF_MEM_TYPE_GENERIC, sizeof(struct httpdpage))))
+	if (!(hp = naf_malloc(mod, sizeof(struct httpdpage))))
 		return NULL;
-	if (!(hp->hp_fn = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, fn))) {
+	if (!(hp->hp_fn = naf_strdup(mod, fn))) {
 		naf_free(mod, hp);
 		return NULL;
 	}
 	hp->hp_owner = NULL;
 	hp->hp_contenttype = NULL; /* defaults to text/html */
-	if (contenttype && !(hp->hp_contenttype = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, contenttype))) {
+	if (contenttype && !(hp->hp_contenttype = naf_strdup(mod, contenttype))) {
 		naf_free(mod, hp->hp_fn);
 		naf_free(mod, hp);
 		return NULL;
@@ -310,7 +310,7 @@ int naf_httpd_sendlmx(struct nafmodule *theirmod, struct nafconn *conn, lmx_t *l
 		return -1;
 	if (!(str = lmx_get_string(lmx)))
 		return -1;
-	if (!(str2 = naf_strdup(ourmodule, NAF_MEM_TYPE_NETBUF, str))) {
+	if (!(str2 = naf_strdup_type(ourmodule, NAF_MEM_TYPE_NETBUF, str))) {
 		free(str);
 		return -1;
 	}
@@ -344,7 +344,7 @@ static int send404(struct nafmodule *mod, struct nafconn *conn)
 	static const char err404[] = GENERIC404;
 	char *reply;
 
-	if (!(reply = naf_strdup(mod, NAF_MEM_TYPE_NETBUF, err404)))
+	if (!(reply = naf_strdup_type(mod, NAF_MEM_TYPE_NETBUF, err404)))
 		return -1;
 
 	if (naf_conn_reqwrite(conn, reply, strlen(reply)) == -1) {
@@ -379,7 +379,7 @@ static int dorequest_get(struct nafmodule *mod, struct nafconn *conn, const char
 				"Content-Type: %s\r\n"
 				"\r\n",
 				hp->hp_contenttype ? hp->hp_contenttype : "text/html; charset=iso-8859-1");
-		if (!(hdr = naf_strdup(mod, NAF_MEM_TYPE_NETBUF, twoohoh)))
+		if (!(hdr = naf_strdup_type(mod, NAF_MEM_TYPE_NETBUF, twoohoh)))
 			return -1;
 
 		if (naf_conn_reqwrite(conn, hdr, strlen(hdr)) == -1) {
@@ -438,13 +438,13 @@ static naf_rpc_req_t *createreq(struct nafmodule *mod, const char *soapname)
 		return NULL;
 	modulelen = p - soapname;
 
-	if (!(module = naf_malloc(mod, NAF_MEM_TYPE_GENERIC, modulelen + 1)))
+	if (!(module = naf_malloc(mod, modulelen + 1)))
 		return NULL;
 	memcpy(module, soapname, modulelen);
 	module[modulelen] = '\0';
 
 	soapname += modulelen + 1;
-	if (!(meth = naf_strdup(mod, NAF_MEM_TYPE_GENERIC, soapname))) {
+	if (!(meth = naf_strdup(mod, soapname))) {
 		naf_free(mod, module);
 		return NULL;
 	}
@@ -535,7 +535,7 @@ static int sendsoapbody(struct nafmodule *mod, struct nafconn *conn, const char 
 
 	buflen = strlen(firstline) + 2 + strlen(DEFAULTHEADERS) +
 			128 + 4 + (sb ? strlen(sb) : 0);
-	if (!(buf = naf_malloc(mod, NAF_MEM_TYPE_NETBUF, buflen + 1))) {
+	if (!(buf = naf_malloc_type(mod, NAF_MEM_TYPE_NETBUF, buflen + 1))) {
 		naf_free(mod, sb);
 		return -1;
 	}
@@ -835,7 +835,7 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 				if (clen > 0) {
 					if (clen > SOAPBUFLEN) {
 						naf_free(mod, buf);
-						if (!(buf = naf_malloc(mod, NAF_MEM_TYPE_NETBUF, clen))) {
+						if (!(buf = naf_malloc_type(mod, NAF_MEM_TYPE_NETBUF, clen))) {
 							return -1; /* XXX HTTP error */
 						}
 					}
