@@ -1,0 +1,7 @@
+Makefile.in
+Makefile
+.libs
+.deps
+libnbio.lo
+libnbio.la
+
