@@ -131,6 +131,7 @@ naf_tlv_t *naf_tlv_remove(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t typ
 	for (prev = head; (cur = *prev); ) {
 		if (cur->tlv_type == type) {
 			*prev = cur->tlv_next;
+			cur->tlv_next = NULL;
 			return cur;
 		}
 		prev = &cur->tlv_next;
