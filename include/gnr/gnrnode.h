@@ -19,6 +19,13 @@
 #ifndef __GNRNODE_H__
 #define __GNRNODE_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
 /*
  * gnrnode structures are kept for three types of nodes:
  *

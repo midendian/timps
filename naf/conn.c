@@ -19,58 +19,46 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#ifdef WIN32 
+#ifdef WIN32
 #include <configwin32.h>
 #endif
 
 #ifdef HAVE_STDIO_H
 #include <stdio.h>
 #endif
-
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
-
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
-
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
-
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
-
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
 #endif
-
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
-
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif

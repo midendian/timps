@@ -44,11 +44,9 @@
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
-
 #ifdef HAVE_STDIO_H
 #include <stdio.h> /* snprintf -- why is it in stdio.h? */
 #endif
@@ -58,18 +56,6 @@
 #include <naf/nafhttpd.h>
 
 #include <libmx.h> /* Sadly, the entire point is XML. */
-
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
-
-#ifdef HAVE_STRING_H
-#include <string.h>
-#endif
-
-#ifdef HAVE_STDIO_H
-#include <stdio.h> /* snprintf -- why is it in stdio.h? */
-#endif
 
 #include "module.h" /* for naf_module__registerresident() only */
 
@@ -162,7 +148,7 @@ static char *http_getnextarg(struct nafmodule *mod, char **cmd)
 	if (!cmd || !*cmd)
 		return NULL;
 
-	if ((end = index(*cmd, ' '))) {
+	if ((end = strchr(*cmd, ' '))) {
 		int len;
 
 		len = end - *cmd;
@@ -231,7 +217,7 @@ static int handleheaderline(struct nafmodule *mod, struct nafconn *conn, char *b
 	char *name, *value = NULL;
 
 	name = buf;
-	if (!(value = index(name, ':')))
+	if (!(value = strchr(name, ':')))
 		return -1;
 	*(value++) = '\0';
 	value = nextnonwhite(value);
@@ -488,7 +474,7 @@ static naf_rpc_req_t *createreq(struct nafmodule *mod, const char *soapname)
 	char *module, *meth;
 	naf_rpc_req_t *req;
 
-	if (!(p = index(soapname, '.')))
+	if (!(p = strchr(soapname, '.')))
 		return NULL;
 	modulelen = p - soapname;
 

@@ -26,23 +26,18 @@
 #ifdef HAVE_STDIO_H
 #include <stdio.h>
 #endif
-
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
-
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #endif
-
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
-
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
@@ -101,7 +96,7 @@ void __rpc_core_listmodules(struct nafmodule *mod, naf_rpc_req_t *req)
 					curstat = statuses[1];
 				else if (cur->status & MOD_STATUS_NOTLOADED)
 					curstat = statuses[0];
-				else 
+				else
 					curstat = statuses[4];
 
 				if (cur->status & MOD_STATUS_LOADED)
@@ -120,8 +115,8 @@ static struct modlist_item *newmi(const char *fn)
 {
 	struct modlist_item *mi;
 
-	if (!fn || (strlen(fn) > MODULE_MAXFILENAME_LEN) || 
-			!(mi = malloc(sizeof(struct modlist_item))))
+	if (!fn || (strlen(fn) > MODULE_MAXFILENAME_LEN) ||
+				!(mi = malloc(sizeof(struct modlist_item))))
 		return NULL;
 	memset(mi, 0, sizeof(struct modlist_item));
 
@@ -199,7 +194,10 @@ static int naf_module__load(struct modlist_item *mi)
 		return 0;
 
 	if (!(mi->status & MOD_STATUS_RESIDENT)) {
-
+#ifdef NODYNAMICLOADING
+		mi->status = MOD_STATUS_ERROR;
+		return -1;
+#else
 		if (!(mi->dlhandle = dlopen(mi->filename, RTLD_NOW))) {
 			dvprintf(NULL, "%s: dlopen: %s\n", mi->filename, dlerror());
 			mi->status = MOD_STATUS_ERROR;
@@ -212,12 +210,15 @@ static int naf_module__load(struct modlist_item *mi)
 			mi->status = MOD_STATUS_ERROR;
 			return -1;
 		}
+#endif
 	}
 
 	if (!mi->firstproc || ((ret = mi->firstproc(&mi->module)) != 0)) {
 		dvprintf(NULL, "%s: nafmodulemain returned error %d\n", mi->filename, ret);
+#ifndef NODYNAMICLOADING
 		if (mi->dlhandle)
 			dlclose(mi->dlhandle);
+#endif
 		mi->status |= MOD_STATUS_ERROR;
 		return -1;
 	}
@@ -238,7 +239,7 @@ int naf_module__loadall(int minpri)
 {
 	struct modlist_item *cur;
 	int pri;
- 
+
 	for (pri = NAF_MODULE_PRI_MAX; pri >= minpri; pri--) {
 		for (cur = modlist; cur; cur = cur->next) {
 			if (cur->startuppri != pri)
@@ -253,7 +254,7 @@ int naf_module__loadall(int minpri)
 int naf_module__unloadall(void)
 {
 	struct modlist_item *cur;
- 
+
 	for (cur = modlist; cur; cur = cur->next) {
 
 		if (!(cur->status & MOD_STATUS_LOADED))
@@ -261,8 +262,10 @@ int naf_module__unloadall(void)
 
 		if (cur->module.shutdown)
 			cur->module.shutdown(&cur->module);
+#ifndef NODYNAMICLOADING
 		if (cur->dlhandle)
 			dlclose(cur->dlhandle);
+#endif
 		cur->status &= ~MOD_STATUS_LOADED;
 		cur->status |= MOD_STATUS_NOTLOADED;
 		cur->lasttimerrun = 0;
@@ -331,7 +334,7 @@ int nafeventv(struct nafmodule *source, naf_event_t event, va_list inap)
 			va_end(ap);
 		}
 	}
- 
+
 	return 0;
 }
 

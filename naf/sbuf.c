@@ -23,12 +23,12 @@
 #include <configwin32.h>
 #endif
 
-#include <naf/nafmodule.h>
-#include <naf/nafbufutils.h>
-
 #ifdef HAVE_STRING_H
 #include <string.h> /* memcpy */
 #endif
+
+#include <naf/nafmodule.h>
+#include <naf/nafbufutils.h>
 
 /* default initial size of dynamic buffers */
 #define NAF_SBUF_DEFAULT_BUFLEN 512

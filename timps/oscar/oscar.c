@@ -16,10 +16,25 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#ifdef HAVE_TIME_H
 #include <time.h>
+#endif
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+#ifdef HAVE_CTYPE_H
 #include <ctype.h>
+#endif
 
 #include <naf/nafmodule.h>
 #include <naf/nafconfig.h>
@@ -51,7 +66,7 @@ toscar_msgrouting(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct gn
 	/* If the target is local and one of ours, take it. */
 	if ((gmhi->destnode->metric == GNR_NODE_METRIC_LOCAL) &&
 					(gmhi->destnode->ownermod == mod)) {
-		gm->routeflags |= GNR_MSG_ROUTEFLAG_ROUTED_LOCAL; 
+		gm->routeflags |= GNR_MSG_ROUTEFLAG_ROUTED_LOCAL;
 		return 1;
 	}
 

@@ -19,6 +19,13 @@
 #ifndef __IM_H__
 #define __IM_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
 #include <naf/nafmodule.h>
 #include <naf/nafconn.h>
 #include <gnr/gnrmsg.h>

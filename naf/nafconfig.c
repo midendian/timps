@@ -33,15 +33,12 @@
 #ifdef HAVE_STDIO_H
 #include <stdio.h>
 #endif
-
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-
 #ifdef HAVE_CTYPE_H
 #include <ctype.h>
 #endif
-
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
@@ -367,15 +364,15 @@ static int readconfig(struct nafmodule *mod, const char *cfn, int including)
 			memset(modname, 0, sizeof(modname));
 
 			linestart++;
-			if (!index(linestart, ']'))
+			if (!strchr(linestart, ']'))
 				continue;
-			*(index(linestart, ']')) = '\0';
+			*(strchr(linestart, ']')) = '\0';
 			strncpy(secname, linestart, sizeof(secname));
 
-			if (index(secname, '=')) {
+			if (strchr(secname, '=')) {
 				char *modstart;
 
-				modstart = index(secname, '=');
+				modstart = strchr(secname, '=');
 				*modstart = '\0';
 				modstart++;
 
@@ -385,13 +382,13 @@ static int readconfig(struct nafmodule *mod, const char *cfn, int including)
 			continue;
 		}
 
-		if (!index(linestart, '=')) {
+		if (!strchr(linestart, '=')) {
 			dvprintf(mod, "invalid line: %s\n", linestart);
 			continue;
 		}
 
 		parm = linestart;
-		if (!(val = index(linestart, '=')+1))
+		if (!(val = strchr(linestart, '=')+1))
 			continue;
 		*(val-1) = '\0';
 

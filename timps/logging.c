@@ -25,11 +25,28 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
+#ifdef HAVE_STDIO_H
 #include <stdio.h>
+#endif
+#ifdef HAVE_TIME_H
 #include <time.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+#ifdef HAVE_CTYPE_H
 #include <ctype.h>
+#endif
 
 #include <naf/nafmodule.h>
 #include <naf/nafconfig.h>

@@ -19,6 +19,13 @@
 #ifndef __GNR_H__
 #define __GNR_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
 int gnr_core_register(void);
 
 #endif /* ndef __GNR_H__ */

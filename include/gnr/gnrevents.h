@@ -19,6 +19,13 @@
 #ifndef __GNR_EVENTS_H__
 #define __GNR_EVENTS_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
 #include <naf/nafmodule.h>
 #include <naf/naftypes.h>
 

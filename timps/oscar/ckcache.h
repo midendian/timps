@@ -19,7 +19,17 @@
 #ifndef __CKCACHE_H__
 #define __CKCACHE_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
+#ifdef HAVE_TIME_H
 #include <time.h>
+#endif
+
 #include <naf/nafmodule.h>
 #include <naf/naftypes.h>
 

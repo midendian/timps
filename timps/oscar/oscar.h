@@ -19,6 +19,13 @@
 #ifndef __TIMPS_OSCAR_H__
 #define __TIMPS_OSCAR_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
 int timps_oscar__register(void);
 
 #endif /* ndef __TIMPS_OSCAR_H__ */

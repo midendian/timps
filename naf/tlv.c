@@ -23,13 +23,13 @@
 #include <configwin32.h>
 #endif
 
-#include <naf/nafmodule.h>
-#include <naf/nafbufutils.h>
-#include <naf/naftlv.h>
-
 #ifdef HAVE_STRING_H
 #include <string.h> /* memcpy */
 #endif
+
+#include <naf/nafmodule.h>
+#include <naf/nafbufutils.h>
+#include <naf/naftlv.h>
 
 
 naf_tlv_t *naf_tlv_new(struct nafmodule *mod, naf_u16_t type, naf_u16_t length, naf_u8_t *value)

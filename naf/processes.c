@@ -23,29 +23,25 @@
 #include <configwin32.h>
 #endif
 
-#include <naf/nafmodule.h>
-#include <naf/nafconn.h>
-#include <naf/naftag.h>
-
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
-
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
-
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h> /* for exit() */
 #endif
+
+#include <naf/nafmodule.h>
+#include <naf/nafconn.h>
+#include <naf/naftag.h>
 
 /* only children in the RUNNING state are listed */
 static naf_childproc_t *naf__childrenlist = NULL;

@@ -48,13 +48,13 @@ struct naf_conn_s; /* defined in nafconn.h, which also requires nafmodule.h */
  *    First pass:  Logging
  *    Second pass: I/O (nafconn)
  *    Third pass: The rest of the resident modules
- *    Last pass: External modules 
+ *    Last pass: External modules
  */
 #define NAF_MODULE_PRI_MAX		5
-#define NAF_MODULE_PRI_FIRSTPASS 	NAF_MODULE_PRI_MAX
-#define NAF_MODULE_PRI_SECONDPASS 	4
+#define NAF_MODULE_PRI_FIRSTPASS	NAF_MODULE_PRI_MAX
+#define NAF_MODULE_PRI_SECONDPASS	4
 #define NAF_MODULE_PRI_THIRDPASS	3
-#define NAF_MODULE_PRI_LASTPASS 	0
+#define NAF_MODULE_PRI_LASTPASS		0
 
 /*
  * Each module has the ability to give the core a plain-text status message for
@@ -69,7 +69,7 @@ struct naf_conn_s; /* defined in nafconn.h, which also requires nafmodule.h */
  * The nafmodule context.
  *
  * Every external module must define a 'nafmodulemain' function which is
- * dynamically imported by the NAF framework's (nafsrc/modules.c).  
+ * dynamically imported by the NAF framework's (nafsrc/modules.c).
  *
  * When called, the nafmodulemain function is passed one of these structs,
  * which it must then fill in as appropriate, returning negative on failure
@@ -78,12 +78,12 @@ struct naf_conn_s; /* defined in nafconn.h, which also requires nafmodule.h */
  *
  * After a successful first-stage load, the loader will then
  * call the function specified by the init member of the context
- * if it is non-NULL.  
+ * if it is non-NULL.
  *
  * Any other of the event functions may be called by the core after that.
  *
  * The loader will call the shutdown member when it is asked to unload this
- * module, or if it is shutting down. 
+ * module, or if it is shutting down.
  *
  */
 struct nafmodule {

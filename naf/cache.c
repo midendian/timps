@@ -19,8 +19,8 @@
 /*
  * This module exports an API that makes it simple for modules to store a
  * cache of arbitrary key/value pairs, with finite timeouts.  Each module
- * can store several seperate "lists" of key/value pairs, specified by a 
- * list ID number.  
+ * can store several seperate "lists" of key/value pairs, specified by a
+ * list ID number.
  *
  * Before using the API, a module must register for the services using
  * naf_cache_register(), which sets up the internal environment for that
@@ -42,15 +42,12 @@
 #ifdef HAVE_STDIO_H
 #include <stdio.h>
 #endif
-
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
-
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif

@@ -5,6 +5,7 @@
 #define HAVE_STDIO_H
 #define HAVE_STRING_H
 
+#define NODYNAMICLOADING 1 /* for now... */
 #define NOUNIXDAEMONIZATION 1
 #define NOUNIXRLIMITS 1
 #define NOSIGNALS 1
