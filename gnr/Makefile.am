@@ -1,5 +1,5 @@
 
-INCLUDES += -I. $(NAF_INCLUDES)
+INCLUDES = -I. $(NAF_INCLUDES)
 CFLAGS += -Wall -g
 
 noinst_LIBRARIES = libgnr.a
@@ -13,6 +13,6 @@ libgnr_a_SOURCES = \
 
 libgnr_a_DEPENDENCIES = \
 	../libnbio/src/libnbio.a \
-	../libmx/src/libmx.la \
+	../libmx/src/libmx.a \
 	../naf/libnaf.a
 

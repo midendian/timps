@@ -1,9 +1,9 @@
 
 INCLUDES = -I../include
 
-noinst_LTLIBRARIES = libmx.la
+noinst_LIBRARIES = libmx.a
 
-libmx_la_SOURCES = \
+libmx_a_SOURCES = \
 	lmx.c
 
 

@@ -9,12 +9,12 @@ AM_MAINTAINER_MODE
 AC_PROG_CC
 AC_ISC_POSIX
 AC_HEADER_STDC
-AC_ARG_PROGRAM
 AM_PROG_LIBTOOL
 
 FAIM_LIBS=
 # this are only relevent for linking the core, not the plugins
-NAF_LDADD="\$(top_srcdir)/libmx/src/libmx.la \$(top_srcdir)/libnbio/src/libnbio.a -lexpat"
+NAF_LDADD="\$(top_srcdir)/naf/libnaf.a \$(top_srcdir)/libmx/src/libmx.a \$(top_srcdir)/libnbio/src/libnbio.a -lexpat"
+GNR_LDADD="\$(top_srcdir)/gnr/libgnr.a"
 
 # gcc3.x changed to C99, which has this lovely feature-bug that breaks NAF tags.
 CFLAGS="-fno-strict-aliasing"
@@ -33,6 +33,7 @@ dnl FAIM_INCLUDES="-I/usr/include/libfaim -I/usr/local/include/libfaim"
 
 AC_CHECK_LIB(dl, dlopen, NAF_LDADD="-ldl $NAF_LDADD")
 AC_SUBST(NAF_LDADD)
+AC_SUBST(GNR_LDADD)
 
 NAF_INCLUDES="-I\$(top_srcdir)/libmx/include -I\$(top_srcdir)/libnbio/include -I\$(top_srcdir)/include "
 AC_SUBST(NAF_INCLUDES)
@@ -61,5 +62,7 @@ AC_OUTPUT([
 	modules/nafconsole/Makefile
 	naf/Makefile
 	gnr/Makefile
+	timps/oscar/Makefile
+	timps/Makefile
 ])
 

@@ -42,6 +42,13 @@
 #define NAF_NOFILE_RLIMIT_DEFAULT 65536
 #define NAF_CORE_RLIMIT_DEFAULT 1000000
 
+static struct {
+	char *cai_name;
+	char *cai_version;
+	char *cai_description;
+	char *cai_copyright;
+} naf_curappinfo = {NULL, NULL, NULL, NULL};
+
 static void sighandler(int signum)
 {
 
@@ -191,8 +198,17 @@ static int naf_uninit(void)
 /*
  * Register core NAF modules, do preliminary setup.
  */
-int naf_init0(void)
+int naf_init0(const char *appname, const char *appver, const char *appdesc, const char *appcopyright)
 {
+
+	if (appname && !(naf_curappinfo.cai_name = strdup(appname)))
+		return -1;
+	if (appver && !(naf_curappinfo.cai_version = strdup(appver)))
+		return -1;
+	if (appdesc && !(naf_curappinfo.cai_description = strdup(appdesc)))
+		return -1;
+	if (appcopyright && !(naf_curappinfo.cai_copyright = strdup(appcopyright)))
+		return -1;
 
 	/*
 	 * This can happen during SIGHUP's reopening of the log files.
@@ -280,11 +296,13 @@ int naf_init1(int argc, char **argv)
 		usage:
 		case 'h':
 		default:
-			fprintf(stderr, "invalid argument %c\n", n);
-			printf("%s v%s -- (c) 2003,2004 Adam Fritzler (mid@zigamorph.net)\n", PACKAGE, VERSION);
-			printf("Usage:\n");
+			printf("%s %s -- %s\n", naf_curappinfo.cai_name, naf_curappinfo.cai_version, naf_curappinfo.cai_description);
+			printf("  %s\n", naf_curappinfo.cai_copyright);
+			printf("\nUsage:\n");
 			printf("\t%s [-h] [-d] [-C var=value] [-m module.so] [-M module.so] [-c file.conf] [-S] [-u username] [-u groupname]\n", argv[0]);
 			printf("\n");
+			if (n != 'h')
+				fprintf(stderr, "invalid argument %c\n", n);
 			naf_uninit();
 			return -1;
 		}
