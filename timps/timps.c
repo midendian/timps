@@ -1,4 +1,16 @@
 
+/*
+ * The main timps module.  It should have main() and get all the submodules
+ * registered.
+ *
+ * Also, the core facilities:
+ *    - security (who can talk to who, and what they can do to each other)
+ *    - session management (keeping track of /when/ who's talking to who)
+ *
+ * Logging and individual protocol support is done in submodules.
+ *
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
