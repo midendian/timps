@@ -9,8 +9,9 @@
 #include "snac.h"
 #include "flap.h"
 #include "ckcache.h"
+#include "im.h"
 
-static int
+int
 toscar_newsnacsb(struct nafmodule *mod, naf_sbuf_t *sb, naf_u16_t group, naf_u16_t subtype, naf_u16_t flags, naf_u32_t id)
 {
 
@@ -59,18 +60,6 @@ toscar_snachandler_0001_0002(struct nafmodule *mod, struct nafconn *conn, struct
 		return HRET_ERROR;
 	}
 
-	return HRET_FORWARD;
-}
-
-static int
-toscar_snachandler_0004_0006(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
-{
-	return HRET_FORWARD;
-}
-
-static int
-toscar_snachandler_0004_0007(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
-{
 	return HRET_FORWARD;
 }
 

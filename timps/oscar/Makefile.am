@@ -9,6 +9,8 @@ libtimpsoscar_a_SOURCES = \
 	ckcache.h \
 	flap.c \
 	flap.h \
+	im.c \
+	im.h \
 	oscar.c \
 	oscar.h \
 	oscar_internal.h \

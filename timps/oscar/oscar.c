@@ -78,6 +78,23 @@ freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, 
 
 		naf_free(mod, sn); 
 
+	} else if (strcmp(tagname, "gnrmsg.oscarmsgcookie") == 0) {
+		naf_u8_t *msgck = (naf_u8_t *)tagdata;
+
+		naf_free(mod, msgck);
+
+	} else if (strcmp(tagname, "gnrmsg.snacid") == 0) {
+		/* an int */
+	} else if (strcmp(tagname, "gnrmsg.oscarmsgtlv") == 0) {
+		naf_tlv_t *msgtlv = (naf_tlv_t *)tagdata;
+
+		naf_tlv_free(mod, msgtlv);
+
+	} else if (strcmp(tagname, "gnrmsg.extraoscartlvs") == 0) {
+		naf_tlv_t *tlvs = (naf_tlv_t *)tagdata;
+
+		naf_tlv_free(mod, tlvs);
+
 	} else
 		dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
 
