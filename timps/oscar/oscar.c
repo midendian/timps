@@ -163,6 +163,11 @@ freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, 
 
 		naf_tlv_free(mod, tlvs);
 
+	} else if (strcmp(tagname, "gnrmsg.srcuserinfo") == 0) {
+		struct touserinfo *toui = (struct touserinfo *)tagdata;
+
+		touserinfo_free(mod, toui);
+
 	} else
 		dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
 
