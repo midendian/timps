@@ -9,14 +9,14 @@
 		(*((buf) + 0) = ((value) >>  0) & 0xff), \
 		1)
 #define naf_byte_put16(buf, value) ( \
-		(*((buf) + 0) = ((value) >>  0) & 0xff), \
-		(*((buf) + 1) = ((value) >>  8) & 0xff), \
+		(*((buf) + 0) = ((value) >>  8) & 0xff), \
+		(*((buf) + 1) = ((value) >>  0) & 0xff), \
 		2)
 #define naf_byte_put32(buf, value) ( \
-		(*((buf) + 0) = ((value) >>  0) & 0xff), \
-		(*((buf) + 1) = ((value) >>  8) & 0xff), \
-		(*((buf) + 2) = ((value) >> 16) & 0xff), \
-		(*((buf) + 3) = ((value) >> 24) & 0xff), \
+		(*((buf) + 0) = ((value) >> 24) & 0xff), \
+		(*((buf) + 1) = ((value) >> 16) & 0xff), \
+		(*((buf) + 2) = ((value) >>  8) & 0xff), \
+		(*((buf) + 3) = ((value) >>  0) & 0xff), \
 		4)
 #define naf_byte_get8(buf) ( \
 		(((*((buf) + 0)) & 0xff) <<  0))
