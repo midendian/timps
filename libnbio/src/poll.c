@@ -34,10 +34,17 @@
 #include <sys/socket.h>
 #endif
 
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#include <errno.h>
+#endif
 
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
+#endif
+
+#ifdef HAVE_SYS_POLL_H
 #include <sys/poll.h>
+#endif
 
 #include <libnbio.h>
 #include "impl.h"

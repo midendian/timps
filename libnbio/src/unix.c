@@ -38,7 +38,9 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <errno.h>
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 
 #include <libnbio.h>
 #include "impl.h"

@@ -75,7 +75,7 @@ static void wsa_seterrno(void)
 	return;
 }
 
-nbio_sockfd_t fdt_newsocket(nbio_t *nb, int family, int type)
+nbio_sockfd_t fdt_newsocket(int family, int type)
 {
 	nbio_sockfd_t fd;
 
@@ -101,7 +101,7 @@ int fdt_readfd(nbio_sockfd_t fd, void *buf, int count)
 
 int fdt_read(nbio_fd_t *fdt, void *buf, int count)
 {
-	return fdt_readfd(fdt->fd, but, count);
+	return fdt_readfd(fdt->fd, buf, count);
 }
 
 int fdt_writefd(nbio_sockfd_t fd, const void *buf, int count)
@@ -465,7 +465,7 @@ int fdt_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handl
 		return -1;
 	}
 
-	if ((fd = fdt_newsocket(nb, addr->sa_family, SOCK_STREAM)) == -1)
+	if ((fd = fdt_newsocket(addr->sa_family, SOCK_STREAM)) == -1)
 		return -1;
 
 	if (fdt_setnonblock(fd) == -1) {
@@ -540,7 +540,7 @@ int fdt_listenfd(nbio_sockfd_t fd)
 nbio_sockfd_t fdt_newlistener(unsigned short portnum)
 {
 	nbio_sockfd_t sfd;
-	const int on = 1;
+	const char on = 1;
 	struct sockaddr_in sin;
 
 	/* bind all interfaces */
@@ -553,7 +553,7 @@ nbio_sockfd_t fdt_newlistener(unsigned short portnum)
 	/* XXX does this work on winsock? */
 	setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
-	if (fdt_bindfd(sfd, &sin, sizeof(sin)) == -1) {
+	if (fdt_bindfd(sfd, (struct sockaddr *)&sin, sizeof(sin)) == -1) {
 		fdt_closefd(sfd);
 		return -1;
 	}
