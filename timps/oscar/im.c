@@ -458,7 +458,7 @@ toscar_icbm_sendoutgoing(struct nafmodule *mod, struct nafconn *conn, struct gnr
 		icbmchan = 0x0002;
 	else
 		return -1; /* not valid for this context */
-	
+
 	if (icbmchan != 0x0001)
 		return -1; /* XXX generate the other types... */
 
@@ -521,7 +521,7 @@ toscar_icbm_sendincoming(struct nafmodule *mod, struct nafconn *conn, struct gnr
 		icbmchan = 0x0002;
 	else
 		return -1; /* not valid for this context */
-	
+
 	if (icbmchan != 0x0001)
 		return -1; /* XXX generate the other types... */
 
