@@ -1,5 +1,6 @@
 
 noinst_HEADERS = \
+	naf.h \
 	nafbufutils.h \
 	nafcache.h \
 	nafconfig.h \
@@ -9,6 +10,7 @@ noinst_HEADERS = \
 	nafmodule.h \
 	nafrpc.h \
 	nafstats.h \
+	naftag.h \
 	naftlv.h \
 	naftypes.h
 

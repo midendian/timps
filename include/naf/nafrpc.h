@@ -55,6 +55,7 @@ naf_rpc_arg_t **naf_rpc_addarg_array(struct nafmodule *mod, naf_rpc_arg_t **head
 
 typedef void (*naf_rpc_method_t)(struct nafmodule *mod, naf_rpc_req_t *req);
 int naf_rpc_register_method(struct nafmodule *mod, const char *name, naf_rpc_method_t func, const char *desc);
+int naf_rpc_unregister_method(struct nafmodule *mod, const char *name);
 
 naf_rpc_arg_t *naf_rpc_getarg(naf_rpc_arg_t *head, const char *name);
 

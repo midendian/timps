@@ -31,6 +31,11 @@
 
 
 typedef struct naf_sbuf_s {
+	struct nafmodule *sbuf_owner;
+#define NAF_SBUF_FLAG_NONE       0x0000
+#define NAF_SBUF_FLAG_FREEBUF    0x0001 /* free associated buffer upon destruction */
+#define NAF_SBUF_FLAG_AUTORESIZE 0x0002
+	naf_u16_t sbuf_flags;
 	naf_u8_t *sbuf_buf;
 	naf_u16_t sbuf_buflen;
 	naf_u16_t sbuf_pos;
@@ -39,6 +44,7 @@ typedef struct naf_sbuf_s {
 
 int naf_sbuf_init(struct nafmodule *mod, naf_sbuf_t *sbuf, naf_u8_t *buf, naf_u16_t buflen);
 void naf_sbuf_free(struct nafmodule *mod, naf_sbuf_t *sbuf);
+int naf_sbuf_prepend(naf_sbuf_t *sbuf, naf_u16_t bytesneeded);
 
 
 /* cursor modifiers */

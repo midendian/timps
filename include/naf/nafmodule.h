@@ -168,6 +168,7 @@ struct nafmodule {
 int naf_module_setname(struct nafmodule *mod, const char *name);
 void naf_module_setstatusline(struct nafmodule *mod, const char *line);
 struct nafmodule *naf_module_findbyname(struct nafmodule *caller, const char *name);
+int naf_module__registerresident(const char *name, int (*firstproc)(struct nafmodule *), int startuppri);
 
 int naf_module_tag_add(struct nafmodule *mod, struct nafmodule *target, const char *name, char type, void *data);
 int naf_module_tag_remove(struct nafmodule *mod, struct nafmodule *target, const char *name, char *typeret, void **dataret);

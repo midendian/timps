@@ -11,9 +11,9 @@
 #include <naf/nafconn.h>
 #include <naf/nafconfig.h>
 #include <naf/nafrpc.h>
+#include <naf/naftag.h>
 
 #include "module.h"
-#include "tags.h"
 #include "core.h"
 #include "memory.h"
 

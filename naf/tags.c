@@ -5,8 +5,8 @@
 #include <string.h>
 
 #include <naf/nafmodule.h>
+#include <naf/naftag.h>
 
-#include "tags.h"
 
 #define MAXTAGNAMELEN 64
 typedef struct naf_tag_s {

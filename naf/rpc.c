@@ -109,6 +109,16 @@ struct rpcmoduleinfo {
 	struct rpcmethod *methods;
 };
 
+static void freemethod(struct rpcmethod *rm)
+{
+
+	naf_free(ourmodule, rm->name);
+	naf_free(ourmodule, rm->desc);
+	naf_free(ourmodule, rm);
+
+	return;
+}
+
 static void freeinfo(struct rpcmoduleinfo *rpi)
 {
 	struct rpcmethod *rm;
@@ -117,9 +127,7 @@ static void freeinfo(struct rpcmoduleinfo *rpi)
 		struct rpcmethod *tmp;
 
 		tmp = rm->next;
-		naf_free(ourmodule, rm->name);
-		naf_free(ourmodule, rm->desc);
-		naf_free(ourmodule, rm);
+		freemethod(rm);
 		rm = tmp;
 	}
 
@@ -195,6 +203,28 @@ int naf_rpc_register_method(struct nafmodule *mod, const char *name, naf_rpc_met
 		return -1;
 
 	return addmethod(rpi, name, func, desc);
+}
+
+int naf_rpc_unregister_method(struct nafmodule *mod, const char *name)
+{
+	struct rpcmoduleinfo *rpi;
+	struct rpcmethod *cur, **prev;
+
+	if (!(rpi = fetchinfo(mod)))
+		return -1;
+
+	for (prev = &rpi->methods; (cur = *prev); ) {
+
+		if (strcasecmp(cur->name, name) == 0) {
+			*prev = cur->next;
+			freemethod(cur);
+			return 0;
+		}
+
+		prev = &cur->next;
+	}
+
+	return -1;
 }
 
 int naf_rpc_request_issue(struct nafmodule *mod, naf_rpc_req_t *req)

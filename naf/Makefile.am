@@ -2,9 +2,9 @@
 INCLUDES += -I. $(NAF_INCLUDES)
 CFLAGS += -Wall -g
 
-bin_PROGRAMS = naf
+noinst_LIBRARIES = libnaf.a
 
-naf_SOURCES = \
+libnaf_a_SOURCES = \
 	cache.c \
 	cache.h \
 	conn.c \
@@ -30,13 +30,9 @@ naf_SOURCES = \
 	stats.c \
 	stats.h \
 	tags.c \
-	tags.h \
 	tlv.c
 
-naf_LDFLAGS = -rdynamic 
-naf_LDADD = $(NAF_LDADD)
-
-naf_DEPENDENCIES = \
+libnaf_a_DEPENDENCIES = \
 	../libnbio/src/libnbio.a \
 	../libmx/src/libmx.la
 

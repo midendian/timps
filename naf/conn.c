@@ -19,8 +19,7 @@
 #include <naf/nafrpc.h>
 #include <naf/nafconfig.h>
 #include <naf/nafconn.h>
-
-#include "tags.h"
+#include <naf/naftag.h>
 
 #include "processes.h" /* for naf_childproc_cleanconn() */
 #include "module.h" /* naf_module__protocoldetect() */
@@ -328,15 +327,17 @@ static int getconnection(struct nafconn *listenconn)
 
 	if (listenconn->owner) {
 
+		if (conndebug > 0) {
+			dvprintf(ourmodule, "[fd %d, cid %lu] forcing ownership to %s\n", conn->fdt->fd, conn->cid, listenconn->owner);
+		}
 		conn->owner = listenconn->owner;
 
 		/*
-		 * Pretend that the detection timeout expired and just give it
-		 * to the module who owns the listener.
+		 * Allow the new owner to set up the connection flags.
 		 */
-		if (conn->owner->connready) {
-			conn->owner->connready(conn->owner, conn, NAF_CONN_READY_DETECTTO);
-			updaterawmode(conn);
+		if (conn->owner->takeconn) {
+			conn->owner->takeconn(conn->owner, conn);
+			updaterawmode(conn); /* might have changed raw flags */
 		}
 
 	} else {
@@ -509,7 +510,7 @@ static int fillendpoints(struct nafconn *conn)
 		/* This won't work for listeners */
 		if ((getpeername(conn->fdt->fd, (struct sockaddr *)&conn->remoteendpoint, &remotesize) == 0)) {
 			if (conndebug) {
-				dvprintf(ourmodule, "[fd %d, cid %d] remote = %s:%u\n", conn->fdt->fd, conn->cid, inet_ntoa(((struct sockaddr_in *)&conn->remoteendpoint)->sin_addr), ntohs(((struct sockaddr_in *)&conn->localendpoint)->sin_port));
+				dvprintf(ourmodule, "[fd %d, cid %d] remote = %s:%u\n", conn->fdt->fd, conn->cid, inet_ntoa(((struct sockaddr_in *)&conn->remoteendpoint)->sin_addr), ntohs(((struct sockaddr_in *)&conn->remoteendpoint)->sin_port));
 			}
 		}
 	}

@@ -44,6 +44,7 @@
 
 static void sighandler(int signum)
 {
+
 	if (signum == NAF_SIGNAL_SHUTDOWN) {
 
 		nafevent(NULL, NAF_EVENT_GENERICOUTPUT, "recieved SIGINT, shutting down...\n");
@@ -177,19 +178,21 @@ static unsigned long getcorelimit(void)
 	return val;
 }
 
-int main(int argc, char **argv) 
+/* Used for backing out of the init process */
+static int naf_uninit(void)
 {
-	static const char yes[] = {"yes"};
-	static const char no[] = {"no"};
-	int n;
-	time_t lasttimerrun = 0;
-	int daemonize = 1;
-	int setupenv = 1;
-	int usesyslog = 0;
-	char *conffn = NULL;
-	const char *droptouser = NULL;
-	const char *droptogroup = NULL;
-	int rlimitfailed;
+
+	nafsignal(NULL, NAF_SIGNAL_SHUTDOWN);
+	naf_module__unloadall();
+
+	return 0;
+}
+
+/*
+ * Register core NAF modules, do preliminary setup.
+ */
+int naf_init0(void)
+{
 
 	/*
 	 * This can happen during SIGHUP's reopening of the log files.
@@ -219,6 +222,26 @@ int main(int argc, char **argv)
 	naf_stats__register();
 	naf_httpd__register();
 	naf_rpc__register();
+
+	return 0;
+}
+
+/*
+ * Parse command line arguments, initialize base environment, load modules.
+ *
+ * XXX lots of missing error handling
+ */
+int naf_init1(int argc, char **argv)
+{
+	static const char yes[] = {"yes"};
+	static const char no[] = {"no"};
+	int n;
+	int daemonize = 1;
+	int setupenv = 1;
+	int usesyslog = 0;
+	char *conffn = NULL;
+	const char *droptouser = NULL;
+	const char *droptogroup = NULL;
 
 
 	/* 
@@ -262,12 +285,13 @@ int main(int argc, char **argv)
 			printf("Usage:\n");
 			printf("\t%s [-h] [-d] [-C var=value] [-m module.so] [-M module.so] [-c file.conf] [-S] [-u username] [-u groupname]\n", argv[0]);
 			printf("\n");
-			exit(2);
-			break;
+			naf_uninit();
+			return -1;
 		}
 	}
 
-	rlimitfailed = (setnofilelimit() == -1) ? 1 : 0;
+	if (setnofilelimit() == -1)
+		dprintf(NULL, "WARNING: unable to increase file descriptor ulimit\n");
 	setcorelimit();
 
 	if (setupenv)
@@ -298,7 +322,8 @@ int main(int argc, char **argv)
 	if (!conffn) {
 		dprintf(NULL, "no config file specified (use -c)\n");
 		fprintf(stderr, "no config file specified (use -c)\n");
-		goto out;
+		naf_uninit();
+		return -1;
 	}
 
 	/* initialize the rest of the modules */
@@ -319,17 +344,35 @@ int main(int argc, char **argv)
 
 	if (daemonize && (dodaemonize() == -1)) {
 		dprintf(NULL, "unable to daemonize");
-		goto out;
+		naf_uninit();
+		return -1;
 	}
+
+	return 0;
+}
+
+/*
+ * Bootstrap config-dependent modules, check environment.
+ */
+int naf_init_final(void)
+{
 
 	/* make sure everything is sane. */
 	nafsignal(NULL, NAF_SIGNAL_CONFCHANGE);
 
 	dvprintf(NULL, "started (pid %d)\n", getpid());
-	if (rlimitfailed)
-		dprintf(NULL, "WARNING: unable to increase file descriptor ulimit\n");
 	dvprintf(NULL, "maximum number of open file descriptors: %d\n", getnofilelimit());
 	dvprintf(NULL, "maximum core file size: %d bytes\n", getcorelimit());
+
+	return 0;
+}
+
+/*
+ * Main loop.
+ */
+int naf_main(void)
+{
+	time_t lasttimerrun = 0;
 
 	for (;;) {
 
@@ -345,11 +388,10 @@ int main(int argc, char **argv)
 		}
 	}
 
+	/* should be unreachable */
 	dvprintf(NULL, "died for some reason (possibly because of %s)\n", strerror(errno));
 
-out:
-	nafsignal(NULL, NAF_SIGNAL_SHUTDOWN);
-	naf_module__unloadall();
+	naf_uninit();
 
 	return 0;
 }

@@ -1,8 +1,7 @@
 
 #include <naf/nafmodule.h>
 #include <naf/nafconn.h>
-
-#include "tags.h"
+#include <naf/naftag.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>

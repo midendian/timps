@@ -38,20 +38,17 @@ struct naf_stat {
 static struct naf_stat *naf__statslist = NULL;
 
 
-static int mkstatname(struct nafmodule *mod, const char *name, char *buf, int buflen)
+static int mkstatname(const char *mod, const char *name, char *buf, int buflen)
 {
 
-	if (mod && (strlen(mod->name)+1+strlen(name)+1 > buflen))
+	if (mod && (strlen(mod)+1+strlen(name)+1 > buflen))
 		return -1;
 	else if (!mod && (strlen(name)+1 > buflen))
 		return -1;
 
-	buf[0] = '\0';
-	if (mod) {
-		strcat(buf, mod->name);
-		strcat(buf, ".");
-	}
-	strcat(buf, name);
+	snprintf(buf, buflen, "%s%s%s", mod ? mod : "",
+					mod ? "." : "",
+					name);
 
 	return 0;
 }
@@ -64,7 +61,7 @@ static int registerstat(struct nafmodule *owner, const char *name, int type, voi
 		return -1;
 	memset(nps, 0, sizeof(struct naf_stat));
 
-	if (mkstatname(owner, name, nps->name, sizeof(nps->name)) == -1) {
+	if (mkstatname(owner ? owner->name : NULL, name, nps->name, sizeof(nps->name)) == -1) {
 		naf_free(ourmodule, nps);
 		return -1;
 	}
@@ -81,6 +78,36 @@ static int registerstat(struct nafmodule *owner, const char *name, int type, voi
 	naf__statslist = nps;
 
 	return 0;
+}
+
+static void naf_stats__freestat(struct naf_stat *nps)
+{
+
+	naf_free(ourmodule, nps);
+
+	return;
+}
+
+int naf_stats_unregisterstat(struct nafmodule *owner, const char *name)
+{
+	char realname[NAF_STATS_MAXNAMELEN+1];
+	struct naf_stat *cur, **prev;
+
+	if (mkstatname(owner ? owner->name : NULL, name, realname, sizeof(realname)) == -1)
+		return -1;
+
+	for (prev = &naf__statslist; (cur = *prev); ) {
+
+		if (strcasecmp(realname, cur->name) == 0) {
+			*prev = cur->next;
+			naf_stats__freestat(cur);
+			return 0;
+		}
+
+		prev = &cur->next;
+	}
+
+	return -1;
 }
 
 static struct naf_stat *findstat(const char *name)
@@ -105,7 +132,7 @@ int naf_stats_getstatvalue(struct nafmodule *mod, const char *name, int *typeret
 	if (!name)
 		return -1;
 
-	if (mkstatname(mod, name, realname, sizeof(realname)) == -1)
+	if (mkstatname(mod->name, name, realname, sizeof(realname)) == -1)
 		return -1;
 
 	if (!(nps = findstat(realname)))
@@ -146,12 +173,6 @@ int naf_stats_register_shortstat(struct nafmodule *owner, const char *name, naf_
 	return registerstat(owner, name, NAF_STATS_TYPE_SHORT, (void *)statp);
 }
 
-static struct {
-	naf_longstat_t starttime;
-} corestats = {
-	0,
-};
-
 static void freestatlist(void)
 {
 	struct naf_stat *nps;
@@ -160,7 +181,7 @@ static void freestatlist(void)
 		struct naf_stat *tmp;
 
 		tmp = nps->next;
-		free(nps);
+		naf_stats__freestat(nps);
 		nps = tmp;
 	}
 
@@ -168,6 +189,7 @@ static void freestatlist(void)
 
 	return;
 }
+
 
 /*
  * stats->getstat()
@@ -185,7 +207,7 @@ static void __rpc_stats_getstat(struct nafmodule *mod, naf_rpc_req_t *req)
 {
 	naf_rpc_arg_t *module, *stat;
 	struct naf_stat *nps;
-	char buf[256] = {""};
+	char buf[NAF_STATS_MAXNAMELEN+1];
 
 	if ((module = naf_rpc_getarg(req->inargs, "module"))) {
 		if (module->type != NAF_RPC_ARGTYPE_STRING) {
@@ -201,16 +223,10 @@ static void __rpc_stats_getstat(struct nafmodule *mod, naf_rpc_req_t *req)
 		}
 	}
 
-	if (!stat) {
+	if (!stat || (mkstatname(module ? module->data.string : NULL, stat->data.string, buf, sizeof(buf)) == -1)) {
 		req->status = NAF_RPC_STATUS_INVALIDARGS;
 		return;
 	}
-
-	if (module) {
-		strcat(buf, module->data.string);
-		strcat(buf, ".");
-	}
-	strcat(buf, stat->data.string);
 
 	if (module)
 		naf_rpc_addarg_string(mod, &req->returnargs, "module", module->data.string);
@@ -291,6 +307,13 @@ static void __rpc_stats_liststats(struct nafmodule *mod, naf_rpc_req_t *req)
 
 	return;
 }
+
+
+static struct {
+	naf_longstat_t starttime;
+} corestats = {
+	0,
+};
 
 
 static int modinit(struct nafmodule *mod)
