@@ -190,7 +190,7 @@ toscar_icbm__renderchan1(struct nafmodule *mod, struct gnrmsg *gm, naf_sbuf_t *s
 	else {
 		/* If we don't have one, make one... */
 		_naf_tlv_addoscarmsgblock(mod, &msgtlv, 0x0002, gm->msgtext);
-		naf_tlv_render(mod, tlvh, sb);
+		naf_tlv_render(mod, msgtlv, sb);
 		naf_tlv_free(mod, msgtlv);
 	}
 
