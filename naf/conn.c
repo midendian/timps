@@ -45,7 +45,7 @@
 static int conndebug = CONN_DEBUG_DEFAULT;
 
 
-/* 
+/*
  * Number of seconds to wait for data while in DETECTING
  * state (before calling protocoldetecttimeout()). Must
  * be >= NAF_TIMER_ACCURACY.
@@ -193,7 +193,7 @@ static void remchildren(struct nafconn *dead)
 
 	for (fdt = gnb.fdlist; fdt; fdt = fdt->next) {
 		struct nafconn *conn = (struct nafconn *)fdt->priv;
-	
+
 		if (fdt->fd == -1)
 			continue;
 
@@ -211,7 +211,7 @@ static void remchildren(struct nafconn *dead)
 	return;
 }
 
-/* 
+/*
  *
  * NEVER call this recursively and/or within a list traversal.
  *
@@ -233,7 +233,7 @@ static void naf_conn_free(struct nafconn *dead)
 
 	naf_tag_freelist(&dead->taglist, (void *)dead);
 
-	/* 
+	/*
 	 * XXX There should be an event broadcast that says this connection is
 	 * being killed, in case someone is holding a pointer to it.  That
 	 * would get rid of these random calls to other modules.
@@ -281,7 +281,7 @@ struct nafconn *naf_conn_findbycid(struct nafmodule *mod, naf_conn_cid_t cid)
 }
 
 /*
- * Really, everyone wanting to close a connection should use this, 
+ * Really, everyone wanting to close a connection should use this,
  * and only the core should call naf_conn_kill.  schedulekill is
  * more what you want anyway, since _kill will not write anything
  * you've requested written since the last naf_conn_poll().  But don't
@@ -299,103 +299,6 @@ int naf_conn_schedulekill(struct nafconn *conn)
 }
 
 static void updaterawmode(struct nafconn *conn); /* later */
-
-/* XXX this should be in libnbio somewhere... */
-static int getconnection(struct nafconn *listenconn)
-{
-	struct sockaddr sa;
-	socklen_t salen = sizeof(sa);
-	int clientfd;
-	struct nafconn *conn;
-
-	if ((clientfd = accept(listenconn->fdt->fd, &sa, &salen)) == -1) {
-
-#ifdef EAGAIN
-		if (errno == EAGAIN)
-			return 0;
-#endif
-#ifdef EWOULDBLOCK /* rare, but some stacks have it... */
-		if (errno == EWOULDBLOCK)
-			return 0;
-#endif
-
-		/*
-		 * On Linux, accept() returns pending network errors. I hate
-		 * that.  Ignore them.
-		 *
-		 * Not all sockets implementations have all these; but we
-		 * assume they all have host/net unreachable, since those
-		 * are rather fundamental -- though if their accept() doesn't
-		 * return these errors, it doesn't matter.
-		 */
-		if ((errno == EHOSTUNREACH) || 
-#ifdef EPROTO
-				(errno == EPROTO) ||
-#endif
-#ifdef ENOPROTOOPT
-				(errno == ENOPROTOOPT) ||
-#endif
-#ifdef EHOSTDOWN
-				(errno == EHOSTDOWN) ||
-#endif
-#ifdef ENONET
-				(errno == ENONET) || 
-#endif
-#ifdef ENETDOWN
-				(errno == ENETDOWN) ||
-#endif
-#ifdef EOPNOTSUPP
-				(errno == EOPNOTSUPP) ||
-#endif
-				(errno == ENETUNREACH)) {
-			return 0;
-		}
-
-		if (errno == EMFILE) { /* too many open fds */
-			dperror(ourmodule, "accept");
-			return 0;
-		}
-
-		dperror(ourmodule, "accept");
-		return -1;
-	}
-
-	if (!(conn = naf_conn_addconn(NULL, clientfd, NAF_CONN_TYPE_CLIENT|NAF_CONN_TYPE_DETECTING))) {
-		dprintf(ourmodule, "error in addconn\n");
-		close(clientfd);
-		return 0; /* not fatal */
-	}
-
-	if (listenconn->owner) {
-
-		if (conndebug > 0) {
-			dvprintf(ourmodule, "[fd %d, cid %lu] forcing ownership to %s\n", conn->fdt->fd, conn->cid, listenconn->owner);
-		}
-		conn->owner = listenconn->owner;
-
-		/*
-		 * Allow the new owner to set up the connection flags.
-		 */
-		if (conn->owner->takeconn) {
-			conn->owner->takeconn(conn->owner, conn);
-			updaterawmode(conn); /* might have changed raw flags */
-		}
-
-	} else {
-
-		/*
-		 * The next step after getconnection() if the listener was not
-		 * owned by a module is protocol detection, which requires raw
-		 * mode.
-		 *
-		 * However, detecting is read-only. Manually shut off POLLOUT.
-		 *
-		 */
-		naf_conn_setraw(conn, 2); /* XXX #define */
-	}
-
-	return clientfd;
-}
 
 static int connhandler_read(nbio_fd_t *fdt)
 {
@@ -416,15 +319,7 @@ static int connhandler_read(nbio_fd_t *fdt)
 		return 0;
 	}
 
-	if (conn->type & NAF_CONN_TYPE_LISTENER) {
-
-		if (getconnection(conn) == -1) {
-			dprintf(ourmodule, "getconn error\n");
-			naf_conn_free(conn);
-			/* XXX should try to reopen the port! */
-		} 
-
-	} else if (conn->type & NAF_CONN_TYPE_DETECTING) {
+	if (conn->type & NAF_CONN_TYPE_DETECTING) {
 		int detected;
 
 		if ((detected = naf_module__protocoldetect(NULL, conn)) == 1) {
@@ -495,6 +390,69 @@ static int connhandler_eof(nbio_fd_t *fdt)
 	return die ? -1 : 0;
 }
 
+static int connhandler_incomingconn(nbio_fd_t *fdt)
+{
+	struct nafconn *lconn = (struct nafconn *)fdt->priv;
+	nbio_sockfd_t sfd;
+	struct sockaddr sa;
+	int salen = sizeof(sa);
+	struct nafconn *nconn;
+
+
+	if (conndebug > 1)
+		dvprintf(ourmodule, "connhandler_incomingconn(%p [fd %d, cid %d])\n", fdt, fdt->fd, lconn->cid);
+
+
+	sfd = nbio_getincomingconn(&gnb, fdt, &sa, &salen);
+	if (sfd == -1) {
+
+#ifdef EMFILE
+		if (errno == EMFILE) { /* too many open files */
+			dprintf(ourmodule, "cannot accept incoming connection; too many open files\n");
+			return 0;
+		}
+#endif
+		return 0; /* most errors here are meaningless. */
+	}
+
+	nconn = naf_conn_addconn(NULL /* no owner yet */, sfd,
+				 NAF_CONN_TYPE_CLIENT|NAF_CONN_TYPE_DETECTING);
+	if (!nconn) {
+		if (conndebug > 0)
+			dprintf(ourmodule, "connhandler_incoming: addconn failed\n");
+		nbio_sfd_close(&gnb, sfd);
+		return 0;
+	}
+
+	if (lconn->owner) {
+
+		if (conndebug > 0) {
+			dvprintf(ourmodule, "[fd %d, cid %lu] forcing ownership to %s\n", nconn->fdt->fd, nconn->cid, lconn->owner);
+		}
+		nconn->owner = lconn->owner;
+
+		/*
+		 * Allow the new owner to set up the connection flags.
+		 */
+		if (nconn->owner->takeconn) {
+			nconn->owner->takeconn(nconn->owner, nconn);
+			updaterawmode(nconn); /* might have changed raw flags */
+		}
+
+	}
+
+	if (!nconn->owner) {
+		/*
+		 * Next step is protocol detection to get an owner.  This
+		 * requires raw mode, but since it's read-only, we only need
+		 * READRAW.
+		 */
+		naf_conn_setraw(nconn, 2); /* XXX #define */
+	}
+
+	return 0;
+}
+
 static int connhandler(void *nbv, int event, nbio_fd_t *fdt)
 {
 
@@ -510,6 +468,9 @@ static int connhandler(void *nbv, int event, nbio_fd_t *fdt)
 		return connhandler_write(fdt);
 	else if ((event == NBIO_EVENT_ERROR) || (event == NBIO_EVENT_EOF))
 		return connhandler_eof(fdt);
+	else if (event == NBIO_EVENT_INCOMINGCONN)
+		return connhandler_incomingconn(fdt);
+
 	return -1;
 }
 
@@ -745,13 +706,9 @@ static int finishconnect(struct nafconn *conn)
 	 * blocked on a connect.  Call a read(,,0) on it
 	 * to see if it connected.  If connected, it should
 	 * return zero, anything else means it didn't connect.
-	 *
-	 * XXX calling read() directly is not portable (neither is the
-	 * varied use of directly calling close() elsewhere)
-	 * 
 	 */
-	if (read(conn->fdt->fd, &blah, 0) != 0) {
-		dperror(NULL, "delayed connect (false alarm)");
+	if (nbio_sfd_read(&gnb, conn->fdt->fd, &blah, 0) != 0) {
+		dperror(ourmodule, "delayed connect (false alarm)");
 		return -1;
 	}
 
@@ -760,11 +717,11 @@ static int finishconnect(struct nafconn *conn)
 	fillendpoints(conn);
 
 	if (conn->owner && conn->owner->connready) {
-		if (conn->owner->connready(conn->owner, conn, 
+		if (conn->owner->connready(conn->owner, conn,
 					   NAF_CONN_READY_CONNECTED) == -1) {
 			dvprintf(ourmodule, "error on %d (CONNECTED)\n", conn->fdt->fd);
 			return -1;
-		} 
+		}
 	} else {
 		dvprintf(ourmodule, "no owner for %d!\n", conn->fdt->fd);
 		return -1;
@@ -810,7 +767,7 @@ char *naf_conn_getlocaladdrstr(struct nafmodule *mod, struct nafconn *conn)
 /* port can be overridden if the hostname is in host:port syntax */
 int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, const char *host, int port)
 {
-	int s;
+	nbio_sockfd_t sfd;
 	struct hostent *h;
 	char newhost[256];
 	struct sockaddr_in sai;
@@ -823,50 +780,59 @@ int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, cons
 	if (index(newhost, ':')) {
 		port = atoi(index(newhost, ':')+1);
 		*(index(newhost, ':')) = '\0';
-	} 
+	}
 
 	if (conndebug)
 		dvprintf(mod, "starting non-blocking connect to %s port %d\n", newhost, port);
+
 
 	/* XXX XXX XXX this blocks!!! */
 	if (!(h = gethostbyname(newhost))) {
 		dvprintf(mod, "gethostbyname failed for %s\n", newhost);
 		return -1;
 	}
- 	if (conndebug)
+	if (conndebug)
 		dvprintf(mod, "gethostbyname finished (%s)\n", newhost);
 
-	if ((s = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-		dvprintf(mod, "socket() failed: %s\n", strerror(errno));
-		return -1;
-	}
+	memset(&sai, 0, sizeof(struct sockaddr_in));
 	memcpy(&sai.sin_addr.s_addr, h->h_addr, 4);
 	sai.sin_family = AF_INET;
 	sai.sin_port = htons(port);
 
-	if (fcntl(s, F_SETFL, O_NONBLOCK) < 0) {
-		dperror(mod, "fcntl");
-		close(s);
+
+	/*
+	 * We can't use nbio_connect() because that won't give us a real
+	 * fdt until the connection is finished.  Many naf-using applications
+	 * rely on having a valid conn->endpoint immediately after calling this
+	 * function.  We can still use libnbio's socket primitive wrappers,
+	 * though.
+	 */
+	if ((sfd = nbio_sfd_new_stream(&gnb)) == -1) {
+		dvprintf(mod, "nbio_sock_new_stream() failed: %s\n", strerror(errno));
 		return -1;
-	}
-  
-	status = connect(s, (struct sockaddr *)&sai, sizeof(sai));
-  
-	if ((status == -1) && (errno != EINPROGRESS)) {
-		dperror(mod, "connect");
-		close(s);
-		return -1;
-	} else if (status == 0) {
-		inprogress = 0;
-	} else if ((status == -1) && (errno == EINPROGRESS)) {
-		inprogress = NAF_CONN_TYPE_CONNECTING;
 	}
 
-	if (!(localconn->endpoint = naf_conn_addconn(NULL, s,
-					(localconn->type ^ NAF_CONN_TYPE_CLIENT) | 
-					NAF_CONN_TYPE_SERVER | 
+	if (nbio_sfd_setnonblocking(&gnb, sfd) == -1) {
+		dvprintf(mod, "nbio_sfd_setnonblocking() failed: %s\n", strerror(errno));
+		nbio_sfd_close(&gnb, sfd);
+		return -1;
+	}
+
+	status = nbio_sfd_connect(&gnb, sfd, (struct sockaddr *)&sai, sizeof(sai));
+	if ((status == -1) && (errno != EINPROGRESS)) {
+		dvprintf(mod, "nbio_sfd_connect() failed: %s\n", strerror(errno));
+		nbio_sfd_close(&gnb, sfd);
+		return -1;
+	} else if (status == 0)
+		inprogress = 0;
+	else if ((status == -1) && (errno == EINPROGRESS))
+		inprogress = NAF_CONN_TYPE_CONNECTING;
+
+	if (!(localconn->endpoint = naf_conn_addconn(NULL, sfd,
+					(localconn->type ^ NAF_CONN_TYPE_CLIENT) |
+					NAF_CONN_TYPE_SERVER |
 					inprogress/*inherit client type*/))) {
-		close(s);
+		nbio_sfd_close(&gnb, sfd);
 		return -1;
 	}
 
@@ -885,9 +851,8 @@ int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, cons
 	/* loop them together */
 	localconn->endpoint->endpoint = localconn;
 
-	if (conndebug)	
+	if (conndebug)
 		dvprintf(mod, "connection started (%d)\n", !!inprogress);
-
 
 	return 0;
 }
@@ -1092,42 +1057,17 @@ static void timerhandler(struct nafmodule *mod)
 
 static struct nafconn *listenestablish(struct nafmodule *mod, unsigned short portnum, struct nafmodule *nowner)
 {
-	int listenfd;
-	const int on = 1;
-	struct addrinfo hints, *res, *ressave;
-	char serv[5];
+	nbio_sockfd_t sfd;
 	struct nafconn *retconn = NULL;
 
-	snprintf(serv, sizeof(serv), "%d", portnum);
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_flags = AI_PASSIVE;
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	if (getaddrinfo(NULL/*any IP*/, serv, &hints, &res) != 0) {
-		dperror(mod, "getaddrinfo");
+	if ((sfd = nbio_sfd_newlistener(&gnb, portnum)) == -1) {
+		dprintf(mod, "unable to create listener socket\n");
 		return NULL;
 	}
-	ressave = res;
-	do {
-		listenfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-		if (listenfd < 0)
-			continue;
-		setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-		if (bind(listenfd, res->ai_addr, res->ai_addrlen) == 0)
-			break; /* success */
-		close(listenfd);
-	} while ( (res = res->ai_next) );
-	if (!res)
-		return NULL;
-	if (listen(listenfd, 1024)!=0) {
-		dperror(mod, "listen");
-		return NULL;
-	}
-	freeaddrinfo(ressave);
 
-	if (!(retconn = naf_conn_addconn(nowner, listenfd, NAF_CONN_TYPE_LISTENER))) {
+	if (!(retconn = naf_conn_addconn(nowner, sfd, NAF_CONN_TYPE_LISTENER))) {
 		dprintf(mod, "unable to add connection for listener\n");
-		close(listenfd);
+		nbio_sfd_close(&gnb, sfd);
 		return NULL;
 	}
 
@@ -1256,7 +1196,7 @@ static void cleanlisteners(struct nafmodule *mod)
 			nconn = listenestablish(mod, portnum, nconnowner);
 
 		if (nconn) {
-			dvprintf(mod, "listening on port %d (for %s)\n", 
+			dvprintf(mod, "listening on port %d (for %s)\n",
 					portnum,
 					nconnowner ? nconnowner->name : "all");
 		}

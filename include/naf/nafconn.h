@@ -32,8 +32,8 @@
 
 #include <libnbio.h> /* for nbio_fd_t definition */
 
-/* 
- * Connection's data type (exactly one of these) 
+/*
+ * Connection's data type (exactly one of these)
  *
  * XXX these should be refielded as a 'protocol' type.
  *
@@ -129,32 +129,32 @@ struct nafconn *naf_conn_find(struct nafmodule *mod, int (*matcher)(struct nafmo
 struct nafconn *naf_conn_findbycid(struct nafmodule *mod, naf_conn_cid_t cid);
 
 int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, const char *host, int port);
-struct nafconn *naf_conn_addconn(struct nafmodule *mod, int fd, unsigned long type);
+struct nafconn *naf_conn_addconn(struct nafmodule *mod, nbio_sockfd_t sfd, naf_u32_t type);
 
 char *naf_conn_getlocaladdrstr(struct nafmodule *mod, struct nafconn *conn);
 
 /*
- * Tagging is a method for module to use when they want to attach 
+ * Tagging is a method for module to use when they want to attach
  * information to a connection without ever touching the connlist.  Tags are
  * indexed by a module/name pair, so that several module can have tags
- * with the same name attached to the same connection (this prevents modules 
+ * with the same name attached to the same connection (this prevents modules
  * from having to guard against each other).
- * 
+ *
  * Use naf_conn_tag_add() and naf_conn_tag_remove() to add and remove tags from
  * a connection.  The naf_conn_tag_ispresent() predicate will return whether or
- * not a tag is attached to a connection.  Finally, naf_conn_tag_fetch() will 
+ * not a tag is attached to a connection.  Finally, naf_conn_tag_fetch() will
  * retrieve a tag's data.
- * 
- * Also, when a connection is being killed, the owner module of each tag will 
- * have its ->freetag function called, at which point it should free any data 
+ *
+ * Also, when a connection is being killed, the owner module of each tag will
+ * have its ->freetag function called, at which point it should free any data
  * contained in the tag (provided as arguments to the function).
  *
- * Note that tagging should be considered a heavy-weight operation, and only 
+ * Note that tagging should be considered a heavy-weight operation, and only
  * used when actually necessary.
  *
  * There are a few standard (but not enforced) conventions for tags.  First,
  * the name should specify what kind of object to which it is attached. For
- * example, a connection tag should have a name that starts with "conn.". 
+ * example, a connection tag should have a name that starts with "conn.".
  * Similiarly, a module tag should have a name that starts with "module.".
  * Also, although tag types can be anything, this list should be considered
  * what other modules expect to see:

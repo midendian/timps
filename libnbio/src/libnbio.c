@@ -552,7 +552,7 @@ int __fdt_ready_in(nbio_t *nb, nbio_fd_t *fdt)
 
 	if (fdt->type == NBIO_FDTYPE_LISTENER) {
 
-		if (fdt->handler(nb, NBIO_EVENT_READ, fdt) < 0)
+		if (fdt->handler(nb, NBIO_EVENT_INCOMINGCONN, fdt) < 0)
 			return -1;
 
 	} else if (fdt->type == NBIO_FDTYPE_STREAM) {
@@ -766,4 +766,64 @@ int nbio_setkeepdelim(nbio_fd_t *fdt, int val)
 	return 0;
 }
 
+int nbio_sfd_close(nbio_t *nb, nbio_sockfd_t fd)
+{
+	return fdt_closefd(fd);
+}
+
+nbio_sockfd_t nbio_sfd_new_stream(nbio_t *nb)
+{
+	return fdt_newsocket(PF_INET, SOCK_STREAM);
+}
+
+int nbio_sfd_setnonblocking(nbio_t *nb, nbio_sockfd_t fd)
+{
+	return fdt_setnonblock(fd);
+}
+
+int nbio_sfd_connect(nbio_t *nb, nbio_sockfd_t fd, struct sockaddr *sa, int salen)
+{
+	return fdt_connectfd(fd, sa, salen);
+}
+
+int nbio_sfd_bind(nbio_t *nb, nbio_sockfd_t fd, struct sockaddr *sa, int salen)
+{
+	return fdt_bindfd(fd, sa, salen);
+}
+
+int nbio_sfd_listen(nbio_t *nb, nbio_sockfd_t fd)
+{
+	return fdt_listenfd(fd);
+}
+
+int nbio_sfd_read(nbio_t *nb, nbio_sockfd_t fd, void *buf, int count)
+{
+	return fdt_readfd(fd, buf, count);
+}
+
+int nbio_sfd_write(nbio_t *nb, nbio_sockfd_t fd, const void *buf, int count)
+{
+	return fdt_writefd(fd, buf, count);
+}
+
+nbio_sockfd_t nbio_sfd_accept(nbio_t *nb, nbio_sockfd_t fd, struct sockaddr *saret, int *salen)
+{
+	return fdt_acceptfd(fd, saret, salen);
+}
+
+nbio_sockfd_t nbio_getincomingconn(nbio_t *nb, nbio_fd_t *fdt, struct sockaddr *saret, int *salen)
+{
+
+	if (!nb || !fdt || (fdt->type != NBIO_FDTYPE_LISTENER)) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	return nbio_sfd_accept(nb, fdt->fd, saret, salen);
+}
+
+nbio_sockfd_t nbio_sfd_newlistener(nbio_t *nb, unsigned short port)
+{
+	return fdt_newlistener(port);
+}
 

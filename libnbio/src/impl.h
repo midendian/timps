@@ -22,12 +22,20 @@
 /* Common API */
 
 /* provided by implementation */
-nbio_sockfd_t fdt_newsocket(nbio_t *nb, int family, int type);
+nbio_sockfd_t fdt_newsocket(int family, int type);
 int fdt_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handler_t handler, void *priv);
 int fdt_read(nbio_fd_t *fdt, void *buf, int count);
 int fdt_write(nbio_fd_t *fdt, const void *buf, int count);
 void fdt_close(nbio_fd_t *fdt);
 int fdt_setnonblock(nbio_sockfd_t fd);
+nbio_sockfd_t fdt_acceptfd(nbio_sockfd_t fd, struct sockaddr *saret, int *salen);
+int fdt_bindfd(nbio_sockfd_t fd, struct sockaddr *sa, int salen);
+int fdt_listenfd(nbio_sockfd_t fd);
+int fdt_connectfd(nbio_sockfd_t fd, const struct sockaddr *addr, int addrlen);
+int fdt_readfd(nbio_sockfd_t fd, void *buf, int count);
+int fdt_writefd(nbio_sockfd_t fd, const void *buf, int count);
+int fdt_closefd(nbio_sockfd_t fd);
+nbio_sockfd_t fdt_newlistener(unsigned short portnum);
 int pfdinit(nbio_t *nb, int pfdsize);
 void pfdkill(nbio_t *nb);
 int pfdadd(nbio_t *nb, nbio_fd_t *newfd);

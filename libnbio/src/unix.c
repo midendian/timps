@@ -38,6 +38,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <netdb.h>
 
 #include <libnbio.h>
 #include "impl.h"
@@ -52,35 +53,96 @@ int fdt_setnonblock(int fd)
 	return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
 }
 
+int fdt_readfd(nbio_sockfd_t fd, void *buf, int count)
+{
+	return read(fd, buf, count);
+}
+
 int fdt_read(nbio_fd_t *fdt, void *buf, int count)
 {
-	int ret;
+	return fdt_readfd(fdt->fd, buf, count);
+}
 
-	ret = read(fdt->fd, buf, count);
-
-	return ret;
+int fdt_writefd(nbio_sockfd_t fd, const void *buf, int count)
+{
+	return write(fd, buf, count);
 }
 
 int fdt_write(nbio_fd_t *fdt, const void *buf, int count)
 {
-	int ret;
+	return fdt_writefd(fdt->fd, buf, count);
+}
 
-	ret = write(fdt->fd, buf, count);
-
-	return ret;
+int fdt_closefd(nbio_sockfd_t fd)
+{
+	return close(fd);
 }
 
 void fdt_close(nbio_fd_t *fdt)
 {
-
-	close(fdt->fd);
-
+	fdt_closefd(fdt->fd);
 	return;
 }
 
-int fdt_newsocket(nbio_t *nb, int family, int type)
+nbio_sockfd_t fdt_newsocket(int family, int type)
 {
 	return socket(family, type, 0);
+}
+
+int fdt_bindfd(nbio_sockfd_t fd, struct sockaddr *sa, int salen)
+{
+	return bind(fd, sa, salen);
+}
+
+int fdt_listenfd(nbio_sockfd_t fd)
+{
+	/* Queue length is pretty meaningless on most modern platforms... */
+	return listen(fd, 1024);
+}
+
+/*
+ * Create a new socket, bind it to the specified port, and start listening.
+ *
+ * IPv6 made this nice and complicated for us. Should probably actually support
+ * IPv6 someday.
+ */
+nbio_sockfd_t fdt_newlistener(unsigned short portnum)
+{
+	nbio_sockfd_t sfd;
+	const int on = 1;
+	struct addrinfo hints, *res, *ressave;
+	char serv[5];
+
+	snprintf(serv, sizeof(serv), "%d", portnum);
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_flags = AI_PASSIVE;
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	if (getaddrinfo(NULL /* any IP */, serv, &hints, &res) == -1)
+		return -1;
+
+	ressave = res;
+	do {
+		sfd = fdt_newsocket(res->ai_family, res->ai_socktype);
+		if (sfd == -1)
+			continue;
+		setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+		if (fdt_bindfd(sfd, res->ai_addr, res->ai_addrlen) == 0)
+			break; /* success */
+		fdt_closefd(sfd);
+	} while ((res = res->ai_next));
+	if (!res) {
+		errno = EINVAL;
+		if (ressave)
+			freeaddrinfo(ressave);
+		return -1;
+	}
+	freeaddrinfo(ressave);
+
+	if (fdt_listenfd(sfd) == -1)
+		return -1;
+
+	return sfd;
 }
 
 struct connectinginfo {
@@ -146,6 +208,11 @@ static int fdt_connect_handler(void *nbv, int event, nbio_fd_t *fdt)
 	return 0;
 }
 
+int fdt_connectfd(nbio_sockfd_t fd, const struct sockaddr *addr, int addrlen)
+{
+	return connect(fd, addr, addrlen);
+}
+
 int fdt_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handler_t handler, void *priv)
 {
 	int fd;
@@ -157,7 +224,7 @@ int fdt_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handl
 		return -1;
 	}
 
-	if ((fd = fdt_newsocket(nb, addr->sa_family, SOCK_STREAM)) == -1)
+	if ((fd = fdt_newsocket(addr->sa_family, SOCK_STREAM)) == -1)
 		return -1;
 
 	if (fdt_setnonblock(fd) == -1) {
@@ -167,7 +234,7 @@ int fdt_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handl
 	}
 
 
-	if ((connect(fd, (struct sockaddr *)addr, addrlen) == -1) &&
+	if ((fdt_connectfd(fd, (struct sockaddr *)addr, addrlen) == -1) &&
 			(errno != EAGAIN) && (errno != EWOULDBLOCK) &&
 			(errno != EINPROGRESS)) {
 		close(fd);
@@ -193,6 +260,11 @@ int fdt_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handl
 	nbio_setraw(nb, fdt, 1);
 
 	return 0;
+}
+
+nbio_sockfd_t fdt_acceptfd(nbio_sockfd_t fd, struct sockaddr *saret, int *salen)
+{
+	return accept(fd, saret, salen);
 }
 
 #endif

@@ -70,6 +70,7 @@ typedef struct nbio_buf_s {
 #define NBIO_EVENT_CONNECTFAILED  5 /* connection failed */
 #define NBIO_EVENT_RESOLVERESULT  6 /* result of a resolver operation */
 #define NBIO_EVENT_TIMEREXPIRE    7 /* timer expired */
+#define NBIO_EVENT_INCOMINGCONN   8 /* (listener only) new incoming conn */
 
 typedef unsigned short nbio_fdt_flags_t;
 
@@ -169,7 +170,7 @@ nbio_fd_t *nbio_iter(nbio_t *nb, int (*matcher)(nbio_t *nb, void *ud, nbio_fd_t 
 nbio_fd_t *nbio_getfdt(nbio_t *nb, nbio_sockfd_t fd);
 nbio_fd_t *nbio_addfd(nbio_t *nb, int type, nbio_sockfd_t fd, int pri, nbio_handler_t handler, void *priv, int rxlen, int txlen);
 int nbio_closefdt(nbio_t *nb, nbio_fd_t *fdt);
-int nbio_closefd(nbio_t *nb, nbio_sockfd_t fd);
+int nbio_sfd_close(nbio_t *nb, nbio_sockfd_t fd);
 int nbio_setraw(nbio_t *nb, nbio_fd_t *fdt, int val);
 int nbio_setcloseonflush(nbio_fd_t *fdt, int val);
 int nbio_cleanuponly(nbio_t *nb);
@@ -177,6 +178,16 @@ int nbio_poll(nbio_t *nb, int timeout);
 int nbio_setpri(nbio_t *nb, nbio_fd_t *fdt, int pri);
 int nbio_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handler_t handler, void *priv);
 int nbio_settimer(nbio_t *nb, nbio_fd_t *fdt, int interval);
+int nbio_sfd_read(nbio_t *nb, nbio_sockfd_t fd, void *buf, int count);
+int nbio_sfd_write(nbio_t *nb, nbio_sockfd_t fd, const void *buf, int count);
+nbio_sockfd_t nbio_sfd_accept(nbio_t *nb, nbio_sockfd_t fd, struct sockaddr *saret, int *salen);
+nbio_sockfd_t nbio_getincomingconn(nbio_t *nb, nbio_fd_t *fdt, struct sockaddr *saret, int *salen);
+nbio_sockfd_t nbio_sfd_newlistener(nbio_t *nb, unsigned short portnum);
+nbio_sockfd_t nbio_sfd_new_stream(nbio_t *nb);
+int nbio_sfd_setnonblocking(nbio_t *nb, nbio_sockfd_t fd);
+int nbio_sfd_connect(nbio_t *nb, nbio_sockfd_t fd, struct sockaddr *sa, int salen);
+int nbio_sfd_bind(nbio_t *nb, nbio_sockfd_t fd, struct sockaddr *sa, int salen);
+int nbio_sfd_listen(nbio_t *nb, nbio_sockfd_t fd);
 
 int nbio_addrxvector(nbio_t *nb, nbio_fd_t *fdt, unsigned char *buf, int buflen, int offset);
 int nbio_addrxvector_time(nbio_t *nb, nbio_fd_t *fdt, unsigned char *buf, int buflen, int offset, time_t trigger);
@@ -193,9 +204,9 @@ int nbio_txavail(nbio_t *nb, nbio_fd_t *fdt);
 /*
  * Stream delimiters.
  *
- * When a delimiter is found in a stream, the application is called 
- * regardless of whether a buffer was completly filled or not.  Additionally, 
- * the delimiter will be read off the stream, but will not be copied into the 
+ * When a delimiter is found in a stream, the application is called
+ * regardless of whether a buffer was completly filled or not.  Additionally,
+ * the delimiter will be read off the stream, but will not be copied into the
  * user buffer (unless NBIO_FDT_FLAG_KEEPDELIM is set).
  *
  * For undelimited streams, either never call adddelim() or setdelim(),
@@ -214,8 +225,8 @@ int nbio_adddelim(nbio_t *nb, nbio_fd_t *fdt, const unsigned char *delim, const 
  */
 int nbio_cleardelim(nbio_fd_t *fdt);
 
-/* 
- * Set or clear the KEEPDELIM flag. 
+/*
+ * Set or clear the KEEPDELIM flag.
  */
 int nbio_setkeepdelim(nbio_fd_t *fdt, int val);
 

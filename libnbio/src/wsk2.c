@@ -87,11 +87,28 @@ nbio_sockfd_t fdt_newsocket(nbio_t *nb, int family, int type)
 	return fd;
 }
 
-int fdt_read(nbio_fd_t *fdt, void *buf, int count)
+int fdt_readfd(nbio_sockfd_t fd, void *buf, int count)
 {
 	int ret;
 
-	if ((ret = recv(fdt->fd, buf, count, 0)) == SOCKET_ERROR) {
+	if ((ret = recv(fd, buf, count, 0)) == SOCKET_ERROR) {
+		wsa_seterrno();
+		return -1;
+	}
+
+	return ret;
+}
+
+int fdt_read(nbio_fd_t *fdt, void *buf, int count)
+{
+	return fdt_readfd(fdt->fd, but, count);
+}
+
+int fdt_writefd(nbio_sockfd_t fd, const void *buf, int count)
+{
+	int ret;
+
+	if ((ret = send(fd, buf, count, 0)) == SOCKET_ERROR) {
 		wsa_seterrno();
 		return -1;
 	}
@@ -101,21 +118,17 @@ int fdt_read(nbio_fd_t *fdt, void *buf, int count)
 
 int fdt_write(nbio_fd_t *fdt, const void *buf, int count)
 {
-	int ret;
+	return fdt_writefd(fdt->fd, buf, count);
+}
 
-	if ((ret = send(fdt->fd, buf, count, 0)) == SOCKET_ERROR) {
-		wsa_seterrno();
-		return -1;
-	}
-
-	return ret;
+int fdt_closefd(nbio_sockfd_t fd)
+{
+	return closesocket(fd);
 }
 
 void fdt_close(nbio_fd_t *fdt)
 {
-
-	closesocket(fdt->fd);
-
+	fdt_closefd(fdt->fd);
 	return;
 }
 
@@ -430,12 +443,11 @@ static int fdt_connect_handler(void *nbv, int event, nbio_fd_t *fdt)
 	return 0;
 }
 
-static int connectwrap(nbio_sockfd_t fd, const struct sockaddr *addr, int addrlen)
+int fdt_connectfd(nbio_sockfd_t fd, const struct sockaddr *addr, int addrlen)
 {
 	int ret;
 
-	ret = connect(fd, (struct sockaddr *)addr, addrlen);
-
+	ret = connect(fd, addr, addrlen);
 	if (ret == SOCKET_ERROR)
 		wsa_seterrno();
 
@@ -463,16 +475,16 @@ int fdt_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handl
 	}
 
 
-	if ((connectwrap(fd, addr, addrlen) == SOCKET_ERROR) &&
-			(errno != EAGAIN) &&
-			(errno != EINPROGRESS)) {
+	if ((fdt_connectfd(fd, addr, addrlen) == SOCKET_ERROR) &&
+						(errno != EAGAIN) &&
+						(errno != EINPROGRESS)) {
 		fprintf(stderr, "fdt_conenct: connect failed: %d, %d, %d, %s\n", fd, addrlen, errno, strerror(errno));
-		closesocket(fd);
+		fdt_closefd(fd);
 		return -1;
 	}
 
 	if (!(ci = malloc(sizeof(struct connectinginfo)))) {
-		closesocket(fd);
+		fdt_closefd(fd);
 		return -1;
 	}
 
@@ -481,7 +493,7 @@ int fdt_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handl
 
 	if (!(fdt = nbio_addfd(nb, NBIO_FDTYPE_STREAM, fd, 0, fdt_connect_handler, (void *)ci, 0, 0))) {
 		fprintf(stderr, "fdt_conenct: nbio_addfd failed: %s\n", strerror(errno));
-		closesocket(fd);
+		fdt_closefd(fd);
 		free(ci);
 		errno = EINVAL;
 		return -1;
@@ -490,6 +502,68 @@ int fdt_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handl
 	nbio_setraw(nb, fdt, 1);
 
 	return 0;
+}
+
+nbio_sockfd_t fdt_acceptfd(nbio_sockfd_t fd, struct sockaddr *saret, int *salen)
+{
+	int ret;
+
+	ret = accept(fd, saret, salen);
+	if (ret == SOCKET_ERROR)
+		wsa_seterrno();
+
+	return ret;
+}
+
+int fdt_bindfd(nbio_sockfd_t fd, struct sockaddr *sa, int salen)
+{
+	int ret;
+
+	ret = bind(fd, sa, salen);
+	if (ret == SOCKET_ERROR)
+		wsa_seterrno();
+
+	return ret;
+}
+
+int fdt_listenfd(nbio_sockfd_t fd)
+{
+	int ret;
+
+	ret = listen(fd, 1024);
+	if (ret == SOCKET_ERROR)
+		wsa_seterrno();
+
+	return ret;
+}
+
+nbio_sockfd_t fdt_newlistener(unsigned short portnum)
+{
+	nbio_sockfd_t sfd;
+	const int on = 1;
+	struct sockaddr_in sin;
+
+	/* bind all interfaces */
+	memset(&sin, 0, sizeof(struct sockaddr_in));
+	sin.sin_port = portnum;
+
+	if ((sfd = fdt_newsocket(PF_INET, SOCK_STREAM)) == -1)
+		return -1;
+
+	/* XXX does this work on winsock? */
+	setsockopt(sfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+
+	if (fdt_bindfd(sfd, &sin, sizeof(sin)) == -1) {
+		fdt_closefd(sfd);
+		return -1;
+	}
+
+	if (fdt_listenfd(sfd) == -1) {
+		fdt_closefd(sfd);
+		return -1;
+	}
+
+	return sfd;
 }
 
 #endif /* NBIO_USE_WINSOCK2 */
