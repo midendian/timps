@@ -449,7 +449,6 @@ static char *cmdgenerator(char *text, int state)
 {
 	static int list_index, len, done;
 	static struct macro *mac;
-	char *name;
 
 	if (!state) {
 		done = 0;
@@ -718,12 +717,10 @@ static void signalhandler(struct nafmodule *mod, struct nafmodule *source, int s
 {
 
 	if (signum == NAF_SIGNAL_CONFCHANGE) {
-		char *str;
 
-		if ((str = naf_config_getmodparmstr(mod, "debug")))
-			nafconsole__debug = atoi(str);
-		if (nafconsole__debug == -1)
-			nafconsole__debug = NAFCONSOLE_DEBUG_DEFAULT;
+		NAFCONFIG_UPDATEINTMODPARMDEF(mod, "debug",
+					      nafconsole__debug,
+					      NAFCONSOLE_DEBUG_DEFAULT);
 
 		macro_syncconf();
 	}

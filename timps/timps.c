@@ -129,12 +129,9 @@ signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
 {
 
 	if (signum == NAF_SIGNAL_CONFCHANGE) {
-		char *debugstr;
-
-		if ((debugstr = naf_config_getmodparmstr(mod, "debug")))
-			timps__debug = atoi(debugstr);
-		if (timps__debug == -1)
-			timps__debug = TIMPS_DEBUG_DEFAULT;
+		NAFCONFIG_UPDATEINTMODPARMDEF(mod, "debug",
+					      timps__debug,
+					      TIMPS_DEBUG_DEFAULT);
 	}
 
 	return;
@@ -154,11 +151,11 @@ modfirst(struct nafmodule *mod)
 }
 
 int
-main(int argc, char **argv) 
+main(int argc, char **argv)
 {
 
 	if (naf_init0("timpsd", "0.10",
-				"Transparent Instant Messaging Proxy Server", 
+				"Transparent Instant Messaging Proxy Server",
 				"(c)2003,2004,2005 Adam Fritzler (mid@zigamorph.net)") == -1)
 		return -1;
 

@@ -16,15 +16,16 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef __MEMORY_H__
-#define __MEMORY_H__
+#ifndef __ICMPV4_H__
+#define __ICMPV4_H__
 
-void naf_memory__module_free(struct nafmodule *mod); /* called in module.c */
-#ifdef __NAFRPC_H__
-void __rpc_core_modmemoryuse(struct nafmodule *mod, naf_rpc_req_t *req);
-#endif
+#include <naf/nafmodule.h>
 
-extern int naf_memory__debug; /* core.c */
+#ifndef __PLUGINREGONLY
 
-#endif
+#endif /* ndef __PLUGINREGONLY */
+
+int naf_icmpv4__register(void);
+
+#endif /* __ICMPV4_H__ */
 

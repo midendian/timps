@@ -1,4 +1,6 @@
 
+SUBDIRS = ipv4
+
 INCLUDES = -I. $(NAF_INCLUDES)
 CFLAGS += -Wall -g $(EXPAT_CFLAGS)
 

@@ -10,7 +10,7 @@ AC_HEADER_STDC
 AM_PROG_LIBTOOL
 
 # this are only relevent for linking the core, not the plugins
-NAF_LDADD="\$(top_srcdir)/naf/libnaf.a \$(top_srcdir)/libmx/src/libmx.a \$(top_srcdir)/libnbio/src/libnbio.a"
+NAF_LDADD="\$(top_srcdir)/naf/libnaf.a \$(top_srcdir)/naf/ipv4/libnaf-ipv4.a \$(top_srcdir)/libmx/src/libmx.a \$(top_srcdir)/libnbio/src/libnbio.a"
 GNR_LDADD="\$(top_srcdir)/gnr/libgnr.a"
 
 # gcc3.x changed to C99, which has this lovely feature-bug that breaks NAF tags.
@@ -22,7 +22,9 @@ AC_CHECK_LIB(expat, XML_Parse,
 	EXPAT_LIBS="-lexpat",
 	EXPAT_CFLAGS="-DNOXML")
 
-AC_CHECK_HEADERS(unistd.h sys/types.h sys/socket.h netinet/in.h netdb.h sys/time.h ctype.h stdlib.h sys/stat.h string.h sys/resource.h pwd.h grp.h stdio.h errno.h syslog.h time.h sys/poll.h stdarg.h arpa/inet.h signal.h sys/mman.h sys/wait.h fcntl.h linux/netfilter_ipv4.h)
+AC_FUNC_MMAP
+
+AC_CHECK_HEADERS(unistd.h sys/types.h sys/socket.h netinet/in.h netdb.h sys/time.h ctype.h stdlib.h sys/stat.h string.h sys/resource.h pwd.h grp.h stdio.h errno.h syslog.h time.h sys/poll.h stdarg.h arpa/inet.h signal.h sys/mman.h sys/wait.h fcntl.h sys/ioctl.h linux/netfilter_ipv4.h linux/netdevice.h linux/if_tun.h netinet/ip.h)
 
 AC_CHECK_LIB(dl, dlopen, NAF_LDADD="-ldl $NAF_LDADD")
 AC_SUBST(NAF_LDADD)
@@ -56,6 +58,7 @@ AC_OUTPUT([
 	modules/nafconsole/Makefile
 	modules/timpsotr/Makefile
 	naf/Makefile
+	naf/ipv4/Makefile
 	gnr/Makefile
 	timps/oscar/Makefile
 	timps/Makefile

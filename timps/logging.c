@@ -417,10 +417,9 @@ signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
 		 * already online.  Their logs will stay open (closed)
 		 * until they log out (log in) next.
 		 */
-		if ((i = naf_config_getmodparmbool(mod, "enableperuserlogs")) == -1)
-			i = TLOGGING_ENABLEPERUSERLOGS_DEFAULT;
-		timps_logging__enableuserlogs = i;
-
+		NAFCONFIG_UPDATEBOOLMODPARMDEF(mod, "enableperuserlogs",
+					       timps_logging__enableuserlogs,
+					       TLOGGING_ENABLEPERUSERLOGS_DEFAULT);
 	}
 
 	return;

@@ -37,6 +37,7 @@
 
 #include <naf/nafmodule.h>
 #include <naf/nafrpc.h>
+#include <naf/nafconfig.h>
 
 #include "core.h"
 #include "memory.h"
@@ -44,10 +45,10 @@
 #include "module.h" /* for naf_module__registerresident() */
 
 
-#define MEMORY_DEBUG_DEFAULT 0
-int naf_memory_debug = MEMORY_DEBUG_DEFAULT; /* imported by memory.c */
+#define NAF_MEMORY_DEBUG_DEFAULT 1
+int naf_memory__debug = NAF_MEMORY_DEBUG_DEFAULT; /* imported by memory.c */
 
-static struct nafmodule *ourmodule = NULL;
+static struct nafmodule *naf_core__module = NULL;
 
 
 static int statusiter(struct nafmodule *mod, struct nafmodule *curmod, void *udata)
@@ -89,11 +90,11 @@ static void __rpc_core_modstatus(struct nafmodule *mod, naf_rpc_req_t *req)
 		if (module) {
 			struct nafmodule *pmod;
 
-			if ((pmod = naf_module_findbyname(ourmodule, module->data.string)))
-				statusiter(ourmodule, pmod, (void *)modules);
+			if ((pmod = naf_module_findbyname(naf_core__module, module->data.string)))
+				statusiter(naf_core__module, pmod, (void *)modules);
 
 		} else
-			naf_module_iter(ourmodule, statusiter, (void *)modules);
+			naf_module_iter(naf_core__module, statusiter, (void *)modules);
 	}
 
 	req->status = NAF_RPC_STATUS_SUCCESS;
@@ -124,7 +125,7 @@ static void __rpc_core_shutdown(struct nafmodule *mod, naf_rpc_req_t *req)
 static int modinit(struct nafmodule *mod)
 {
 
-	ourmodule = mod;
+	naf_core__module = mod;
 
 	naf_rpc_register_method(mod, "modstatus", __rpc_core_modstatus, "Get module list and status");
 	naf_rpc_register_method(mod, "modmemoryuse", __rpc_core_modmemoryuse, "Get module memory usage");
@@ -137,9 +138,21 @@ static int modinit(struct nafmodule *mod)
 static int modshutdown(struct nafmodule *mod)
 {
 
-	ourmodule = NULL;
+	naf_core__module = NULL;
 
 	return 0;
+}
+
+static void signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
+{
+
+	if (signum == NAF_SIGNAL_CONFCHANGE) {
+		NAFCONFIG_UPDATEINTMODPARMDEF(mod, "debug",
+					      naf_memory__debug,
+					      NAF_MEMORY_DEBUG_DEFAULT);
+	}
+
+	return;
 }
 
 static int modfirst(struct nafmodule *mod)
@@ -148,6 +161,7 @@ static int modfirst(struct nafmodule *mod)
 	naf_module_setname(mod, "core");
 	mod->init = modinit;
 	mod->shutdown = modshutdown;
+	mod->signal = signalhandler;
 
 	return 0;
 }

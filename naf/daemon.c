@@ -87,6 +87,10 @@
 #include "stats.h"
 #include "httpd.h"
 #include "rpc.h"
+#include "ipv4/net.h"
+#include "ipv4/ipv4.h"
+#include "ipv4/icmpv4.h"
+#include "ipv4/linuxtun.h"
 #undef __PLUGINREGONLY
 
 #define NAF_NOFILE_RLIMIT_DEFAULT 65536
@@ -287,10 +291,15 @@ int naf_init0(const char *appname, const char *appver, const char *appdesc, cons
 	naf_conn__register();
 
 	/* Fairly independent utility stuff */
+	naf_linuxtun__register();
+	naf_icmpv4__register();
+	naf_ipv4__register();
+	naf_net__register();
 	naf_cache__register();
 	naf_stats__register();
 	naf_httpd__register();
 	naf_rpc__register();
+
 
 	return 0;
 }

@@ -87,7 +87,7 @@ static int naf_sbuf__extendbuf(naf_sbuf_t *sbuf, naf_u16_t bytesneeded)
 		return -1;
 
 	/* (awkward because of unsigned) */
-	for (nbuflen = sbuf->sbuf_buflen; 
+	for (nbuflen = sbuf->sbuf_buflen;
 			bytesneeded > NAF_SBUF_DEFAULT_BLOCKSIZE;
 			nbuflen += NAF_SBUF_DEFAULT_BLOCKSIZE,
 				bytesneeded -= NAF_SBUF_DEFAULT_BLOCKSIZE)

@@ -16,15 +16,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef __MEMORY_H__
-#define __MEMORY_H__
+#ifndef __LINUXTUN_H__
+#define __LINUXTUN_H__
 
-void naf_memory__module_free(struct nafmodule *mod); /* called in module.c */
-#ifdef __NAFRPC_H__
-void __rpc_core_modmemoryuse(struct nafmodule *mod, naf_rpc_req_t *req);
-#endif
+#ifndef __PLUGINREGONLY
+#endif /* ndef __PLUGINREGONLY */
 
-extern int naf_memory__debug; /* core.c */
+int naf_linuxtun__register(void);
 
-#endif
+#endif /* __LINUXTUN_H__ */
 

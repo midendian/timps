@@ -28,12 +28,50 @@
 
 #include <naf/nafmodule.h>
 
+#include <stdlib.h> /* for atoi */
+
 int naf_config_setparm(const char *parm, const char *data);
 char *naf_config_getparmstr(const char *parm);
 int naf_config_getparmbool(const char *parm);
 
 char *naf_config_getmodparmstr(struct nafmodule *mod, const char *parm);
 int naf_config_getmodparmbool(struct nafmodule *mod, const char *parm);
+
+#define NAFCONFIG_UPDATEINTMODPARMDEF(_m, _p, _v, _d)               \
+	do {                                                        \
+		char *__str;                                        \
+                                                                    \
+		if ((__str = naf_config_getmodparmstr(_m, _p)))     \
+			_v = atoi(__str);                           \
+		if (_v == -1)                                       \
+			_v = _d;                                    \
+	} while (0)
+
+/* this uses an extra variable in case _v is not a signed type */
+#define NAFCONFIG_UPDATEBOOLMODPARMDEF(_m, _p, _v, _d)              \
+	do {                                                        \
+		int __i;                                            \
+                                                                    \
+		__i = naf_config_getmodparmbool(_m, _p);            \
+		if (__i == -1)                                      \
+			__i = _d;                                   \
+		_v = __i;                                           \
+	} while (0)
+
+#define NAFCONFIG_UPDATESTRMODPARMDEF(_m, _p, _v, _d)               \
+	do {                                                        \
+		char *__str;                                        \
+                                                                    \
+		if (_v) {                                           \
+			naf_free(_m, _v);                           \
+			_v = NULL;                                  \
+		}                                                   \
+		__str = naf_config_getmodparmstr(_m, _p);           \
+		if (__str)                                          \
+			_v = naf_strdup(_m, __str);                 \
+		if (!_v && _d)                                      \
+			_v = naf_strdup(_m, _d);                    \
+	} while (0)
 
 #endif /* __NAFCONFIG_H__ */
 

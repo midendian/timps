@@ -62,7 +62,7 @@ static void totr_uiop__write_fingerprints(void *opdata);
 static void totr_uiop__gone_secure(void *opdata, ConnContext *context);
 static void totr_uiop__gone_insecure(void *opdata, ConnContext *context);
 static void totr_uiop__still_secure(void *opdata, ConnContext *context, int is_reply);
-static void totr_uiop__log_message(void *opdata, const char *message);   
+static void totr_uiop__log_message(void *opdata, const char *message);
 static OtrlMessageAppOps timps_otr__ui_ops = {
 	totr_uiop__create_privkey,
 	totr_uiop__inject_message,
@@ -667,9 +667,9 @@ signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
 	if (signum == NAF_SIGNAL_CONFCHANGE) {
 		char *str;
 
-		naf_free(mod, timps_otr__keyfilepath);
-		str = naf_config_getmodparmstr(mod, "keyfilepath");
-		timps_otr__keyfilepath = str ? naf_strdup(mod, str) : NULL;
+		NAFCONFIG_UPDATESTRMODPARMDEF(mod, "keyfilepath",
+					      timps_otr__keyfilepath,
+					      NULL);
 		{
 			char *pkfn, *fpfn;
 
@@ -698,10 +698,9 @@ signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
 			naf_free(mod, fpfn);
 		}
 
-		str = naf_config_getmodparmstr(mod, "debug");
-		timps_otr__debug = str ? atoi(str) : -1;
-		if (timps_otr__debug == -1)
-			timps_otr__debug = TOTR_DEBUG_DEFAULT;
+		NAFCONFIG_UPDATEINTMODPARMDEF(mod, "debug",
+					      timps_otr__debug,
+					      TOTR_DEBUG_DEFAULT);
 	}
 
 	return;

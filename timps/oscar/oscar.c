@@ -250,22 +250,14 @@ signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
 {
 
 	if (signum == NAF_SIGNAL_CONFCHANGE) {
-		char *str;
 
-		if ((str = naf_config_getmodparmstr(mod, "debug")))
-			timps_oscar__debug = atoi(str);
-		if (timps_oscar__debug == -1)
-			timps_oscar__debug = TIMPS_OSCAR_DEBUG_DEFAULT;
+		NAFCONFIG_UPDATEINTMODPARMDEF(mod, "debug",
+					      timps_oscar__debug,
+					      TIMPS_OSCAR_DEBUG_DEFAULT);
 
-
-		if (timps_oscar__authorizer) {
-			naf_free(mod, timps_oscar__authorizer);
-			timps_oscar__authorizer = NULL;
-		}
-		if ((str = naf_config_getmodparmstr(mod, "authorizer")))
-			timps_oscar__authorizer = naf_strdup(mod, str);
-		if (!timps_oscar__authorizer)
-			timps_oscar__authorizer = naf_strdup(mod, TIMPS_OSCAR_AUTHORIZER_DEFAULT);
+		NAFCONFIG_UPDATESTRMODPARMDEF(mod, "authorizer",
+					      timps_oscar__authorizer,
+					      TIMPS_OSCAR_AUTHORIZER_DEFAULT);
 	}
 
 	return;

@@ -127,3 +127,55 @@ macro[users][expansion]=call gnr->listnodes()
 ----- /SNIP -----
 
 
+=== USING NAFNET AND IPv4 ===
+
+Although not useful for timps (at present, at least, and I'm not sure what it
+would use it for), naf includes a basic IPv4 implementation.  You can use this
+to build extremely low-level applications, particularly prototyping new
+protocols without the hassle of the kernel development cycle (ie, crashing your
+machine).
+
+There is currently only one driver: Linux tun/tap, and that really only
+supports tun, not tap.  A pcap/libnet driver that can use a real ethernet
+interface is on the way.
+
+To use tun/tap:
+  1. Compile the tun/tap driver into your kernel (or as a module)
+  2. The tunN devices are created dynamically (by naf via the kernel).  Sadly,
+     this creates a permissions nightmare.  If you don't want to run naf/timps
+     as root (and I don't suggest it), set the permissions of /dev/net/tun to
+     some normal user, and run naf/timps as that.  Unfortunately, in that
+     configuration, naf cannot configure the Linux side of the tunnel for you,
+     so every time you start naf, you'll need to run ifconfig as root after it
+     starts every time (!!!).
+  3. If you don't have /dev/net/tun, do 
+        mkdir /dev/net && mknod /dev/net/tun c 10 200
+     (and set permissions of that file as described above).
+  4. Add stuff like this to your timps/naf config:
+
+[module=net]
+debug=10
+interface[lnx0][ipv4][address]=10.0.4.2
+interface[lnx0][ipv4][mask]=255.255.255.0
+interface[lnx0][mtu]=1500
+interface[lnx0][state]=up
+
+[module=ipv4]
+debug=10
+
+[module=linuxtun]
+debug=10
+
+  5. Start up naf.  On another terminal, run ifconfig.  For the config above,
+     it'd be:
+       ifconfig tun0 10.0.4.1 pointopoint 10.0.4.2
+     That makes the Linux side .1 and the naf side .2.
+  6. Ping should work:
+	# ping 10.0.4.2
+	PING 10.0.4.2 (10.0.4.2): 56 data bytes
+	64 bytes from 10.0.4.2: icmp_seq=0 ttl=255 time=0.7 ms
+	64 bytes from 10.0.4.2: icmp_seq=1 ttl=255 time=0.3 ms
+     Note that with all that debugging turned on (particularly if you have the
+     conn module set to debug=10), the latency will be really high, due to the
+     logging of every packet a gazillion times.
+

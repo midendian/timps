@@ -22,6 +22,7 @@ timpsd_DEPENDENCIES = \
 	../libnbio/src/libnbio.a \
 	../libmx/src/libmx.a \
 	../naf/libnaf.a \
+	../naf/ipv4/libnaf-ipv4.a \
 	../gnr/libgnr.a \
 	oscar/libtimpsoscar.a
 

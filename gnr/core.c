@@ -201,12 +201,9 @@ static void signalhandler(struct nafmodule *mod, struct nafmodule *source, int s
 {
 
 	if (signum == NAF_SIGNAL_CONFCHANGE) {
-		char *debugstr;
 
-		if ((debugstr = naf_config_getmodparmstr(mod, "debug")))
-			gnr__debug = atoi(debugstr);
-		if (gnr__debug == -1)
-			gnr__debug = GNR_DEBUG_DEFAULT;
+		NAFCONFIG_UPDATEINTMODPARMDEF(mod, "debug",
+					      gnr__debug, GNR_DEBUG_DEFAULT);
 	}
 
 	return;
