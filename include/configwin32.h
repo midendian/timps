@@ -5,6 +5,8 @@
 #define HAVE_STDIO_H
 #define HAVE_STRING_H
 
+#define NOXML 1 /* until the expat problem is solved... */
+
 #define NODYNAMICLOADING 1 /* for now... */
 #define NOUNIXDAEMONIZATION 1
 #define NOUNIXRLIMITS 1
@@ -19,6 +21,7 @@
 
 #define snprintf _snprintf
 #define vsnprintf _vsnprintf
+#define strcasecmp _stricmp
 
 #define NBIO_USE_WINSOCK2 1
 #include <winsock2.h>
