@@ -31,8 +31,12 @@
 #include <configwin32.h>
 #endif
 
-#ifndef HAVE_EXPAT_H
+#ifndef NOXML
+#ifdef HAVE_EXPAT_H
+#include <expat.h>
+#else
 #define NOXML 1
+#endif
 #endif
 
 #ifndef NOXML

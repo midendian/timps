@@ -2,7 +2,18 @@
 #ifndef __LIBMX_H__
 #define __LIBMX_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
+#ifndef NOXML
 #include <expat.h>
+#endif
+
+#ifndef NOXML
 
 typedef struct lmx_attrib_s {
 	char *name;
@@ -58,6 +69,8 @@ lmx_t *lmx_get_firstchild(lmx_t *lmx); /* may return LMX_TYPE_CDATA */
 lmx_t *lmx_get_nextsibling(lmx_t *lmx); /* may return LMX_TYPE_CDATA */
 lmx_t *lmx_get_firsttagchild(lmx_t *lmx);
 lmx_t *lmx_get_nexttagsibling(lmx_t *lmx);
+
+#endif /* ndef NOXML */
 
 #endif /* __LIBMX_H__ */
 

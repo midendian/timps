@@ -14,8 +14,9 @@ timpsd_SOURCES = \
 timpsd_LDFLAGS = -rdynamic
 timpsd_LDADD = \
 	oscar/libtimpsoscar.a \
+	$(EXPAT_LIBS) \
 	$(GNR_LDADD) \
-	$(NAF_LDADD)
+	$(NAF_LDADD) 
 
 timpsd_DEPENDENCIES = \
 	../libnbio/src/libnbio.a \

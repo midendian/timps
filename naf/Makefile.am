@@ -1,6 +1,6 @@
 
 INCLUDES = -I. $(NAF_INCLUDES)
-CFLAGS += -Wall -g
+CFLAGS += -Wall -g $(EXPAT_CFLAGS)
 
 noinst_LIBRARIES = libnaf.a
 

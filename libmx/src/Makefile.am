@@ -1,5 +1,6 @@
 
 INCLUDES = -I../include
+CFLAGS += $(EXPAT_CFLAGS)
 
 noinst_LIBRARIES = libmx.a
 

@@ -74,7 +74,7 @@
 #undef dperror
 #ifndef NOVAMACROS
 #undef dvprintf
-#define dvprintf(p, x, y...) nafevent(NULL, NAF_EVENT_GENERICOUTPUT, "%16.16s: " x, p->name, y)
+#define dvprintf(p, x, y...) nafevent(NULL, NAF_EVENT_GENERICOUTPUT, x, y)
 #endif
 #define dprintf(p, x) nafevent(NULL, NAF_EVENT_GENERICOUTPUT, x)
 

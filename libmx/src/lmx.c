@@ -7,10 +7,10 @@
 #include <string.h>
 #include <stdio.h> /* snprintf */
 
+#ifndef NOXML
+
 #include <expat.h>
-
 #include <libmx.h>
-
 
 static lmx_t *lmx__new(int type)
 {
@@ -755,4 +755,6 @@ void lmx_dump(lmx_t *lmx)
 
 	return;
 }
+
+#endif /* ndef NOXML */
 
