@@ -1,3 +1,53 @@
 
-It does stuff.
+See:
+   http://www.zigamorph.net/timps/
+
+To compile:
+  ./gen ; ./configure ; make
+You'll need libtool, automake, and autoconf, of course.  You'll need ncurses
+(including headers) installed to compile the nafconsole plugin, which you'll
+find very helpful in debugging.
+
+For development, I run it something like this:
+   timps/timpsd -c ~/timps.conf -d -D -M les/nafconsole/.libs/libnafconsole.so
+All messages will go to the log file specified in the config (see below), and
+you will be given a "timps>" prompt (thanks to nafconsole).  From this
+prompt, you can make RPC calls.  Try "call rpc->help()", for example.  The
+most helpful right now is probably "call gnr->listnodes()" which will show
+you the users currently online.
+
+To run it as a daemon, use the much simpler:
+   timpsd -c /etc/timps.conf
+And it will fork and detach from the terminal into the background.  Note that
+the config file path must be absolute, since daemonizing loses the current
+working directory.
+
+
+Configuration file suitable for development (all debugging on):
+
+----- SNIP -----
+
+[module=conn]
+listenports=5190/timps-oscar
+debug=10
+
+[module=timps]
+debug=10
+
+[module=timps-oscar]
+debug=10
+; if you're using aimdlite for testing
+;authorizer=localhost:6190
+; default is login.oscar.aol.com:5190
+
+[module=logging]
+; this is the low-level logging module (in NAF) -- it does not see IMs
+logfilepath=/home/mid/tmp/timpsdevlogs
+systemlogfile=timpssystem.log
+
+[module=gnr]
+debug=10
+
+----- /SNIP -----
+
 
