@@ -25,6 +25,7 @@
 #include <naf/naf.h>
 #include <naf/nafmodule.h>
 #include <naf/nafrpc.h>
+#include <naf/nafconfig.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -34,6 +35,8 @@
 
 static struct nafmodule *nafconsole__module = NULL;
 static char *nafconsole__prompt = NULL;
+#define NAFCONSOLE_DEBUG_DEFAULT 0
+static int nafconsole__debug = NAFCONSOLE_DEBUG_DEFAULT;
 
 typedef struct {
 	char *name;
@@ -41,24 +44,19 @@ typedef struct {
 	char *doc;
 } cmd_t;
 
-static int cmd_help(char *arg);
 static int cmd_call(char *arg);
 
+/*
+ * XXX remove this.  There is only one "command", so it is pointless.
+ * Should be able to do just:
+ *	timps>core->listmodules()
+ * Or, better:
+ *	timps>cor<tab>li<tab>
+ */
 static cmd_t cmdlist[] = {
-	{ "help", cmd_help, "Help"},
 	{ "call", cmd_call, "Invoke a NAF RPC method"},
 	{ (char *)NULL, (Function *)NULL, (char *)NULL }
 };
-
-static int cmd_help(char *arg)
-{
-	int i;
-
-	for (i = 0; cmdlist[i].name; i++)
-		printf("\t%s\t%s\n", cmdlist[i].name, cmdlist[i].doc);
-
-	return 0;
-}
 
 static void dumpargs(naf_rpc_arg_t *head, int depth)
 {
@@ -297,7 +295,7 @@ static int cmd_call(char *arg)
 		printf("rpc: unknown method\n");
 	else if (req->status == NAF_RPC_STATUS_PENDING)
 		printf("rpc: request pending\n");
-	else 
+	else
 		printf("rpc: unknown return status %d\n", req->status);
 
 out:
@@ -307,70 +305,196 @@ out:
 }
 
 
+struct macro {
+	char *ma_cmd; /* what the user types */
+	char *ma_def; /* what it expands to */
+	struct macro *ma__next;
+};
+static struct macro *nafconsole__macrolist;
+
+static struct macro *macro_find(const char *cmd)
+{
+	struct macro *ma;
+
+	for (ma = nafconsole__macrolist; ma; ma = ma->ma__next) {
+		if (strcmp(ma->ma_cmd, cmd) == 0)
+			return ma;
+	}
+	return NULL;
+}
+
+static void macro__free(struct macro *ma)
+{
+
+	naf_free(nafconsole__module, ma->ma_cmd);
+	naf_free(nafconsole__module, ma->ma_def);
+	naf_free(nafconsole__module, ma);
+
+	return;
+}
+
+static int macro_add(const char *cmd, const char *def)
+{
+	struct macro *ma;
+
+	ma = macro_find(cmd);
+	if (ma)
+		return -1;
+
+	if (!(ma = naf_malloc(nafconsole__module, sizeof(struct macro))))
+		return -1;
+	ma->ma_cmd = naf_strdup(nafconsole__module, cmd);
+	ma->ma_def = naf_strdup(nafconsole__module, def);
+	if (!ma->ma_cmd || !ma->ma_def) {
+		macro__free(ma);
+		return -1;
+	}
+
+	ma->ma__next = nafconsole__macrolist;
+	nafconsole__macrolist = ma;
+
+	return 0;
+}
+
+static void macro_adddefaults(void)
+{
+	macro_add("help", "call rpc->help");
+	return;
+}
+
+static void macro_remall(void)
+{
+	struct macro *ma;
+
+	for (ma = nafconsole__macrolist; ma; ) {
+		struct macro *mat;
+
+		mat = ma->ma__next;
+		macro__free(ma);
+		ma = mat;
+	}
+	nafconsole__macrolist = NULL;
+
+	return;
+}
+
+
 static cmd_t *cmdfind(char *name)
 {
 	int i;
 
-	for (i = 0; cmdlist[i].name; i++)
-		if (strcmp (name, cmdlist[i].name) == 0)
+	for (i = 0; cmdlist[i].name; i++) {
+		if (strcmp(name, cmdlist[i].name) == 0)
 			return (&cmdlist[i]);
+	}
 
 	return ((cmd_t *)NULL);
 }
 
-static int cmdexec(char *line)
+static int cmdexec(char *line, int depth)
 {
-	register int i;
+	int i;
+	struct macro *ma;
 	cmd_t *command;
 	char *word;
 
+	if (!line || (depth > 1))
+		return -1;
+
 	/* Isolate the command word. */
 	i = 0;
-	while (line[i] && whitespace (line[i]))
+	while (line[i] && whitespace(line[i]))
 		i++;
 	word = line + i;
-
-	while (line[i] && !whitespace (line[i]))
+	while (line[i] && !whitespace(line[i]))
 		i++;
-
 	if (line[i])
 		line[i++] = '\0';
 
-	command = cmdfind(word);
+	if (depth == 0) {
+		ma = macro_find(word);
+		if (ma) {
+			char *newcmd;
+			int ret;
 
+			/*
+			 * readline is a good example of how not to do strings.
+			 * I hate readline.  I think it was written by C++
+			 * programmers to make C look bad.
+			 */
+			newcmd = naf_strdup(nafconsole__module, ma->ma_def);
+			ret = cmdexec(newcmd, depth + 1);
+			naf_free(nafconsole__module, newcmd);
+			return ret;
+		}
+	}
+
+	command = cmdfind(word);
 	if (!command) {
 		printf("%s: invalid command\n", word);
 		return (-1);
 	}
 
 	/* Get argument to command, if any. */
-	while (whitespace (line[i]))
+	while (whitespace(line[i]))
 		i++;
 
 	word = line + i;
 
 	/* Call the function. */
-	return ((*(command->func)) (word));
+	return command->func(word);
 }
 
 static char *cmdgenerator(char *text, int state)
 {
-	static int list_index, len;
+	static int list_index, len, done;
+	static struct macro *mac;
 	char *name;
 
 	if (!state) {
+		done = 0;
 		list_index = 0;
-		len = strlen (text);
+		len = strlen(text);
+		mac = nafconsole__macrolist;
 	}
 
+	if (done)
+		return NULL;
+
+	/*
+	 * Obviously we assume that readline calls this function repeatedly
+	 * while doing nothing else -- ie, the macro list isn't changing.
+	 */
+	while (mac) {
+		char *ret = NULL;
+
+		if (strcmp(mac->ma_cmd, text) == 0) {
+			/*
+			 * If what they typed matches exactly, then expand the
+			 * macro in-place.
+			 */
+			done = 1;
+			ret = strdup(mac->ma_def); /* freed by rl */
+
+		} else if (strncmp(mac->ma_cmd, text, len) == 0) {
+			/*
+			 * Partial match; provide possible completion.
+			 */
+			ret = strdup(mac->ma_cmd); /* freed by rl */
+		}
+
+		mac = mac->ma__next;
+		if (ret)
+			return ret;
+	}
+#if 0
 	while ((name = cmdlist[list_index].name)) {
 		list_index++;
-		if (strncmp (name, text, len) == 0)
-			return (strdup(name));
+		if (strncmp(name, text, len) == 0)
+			return strdup(name); /* freed by rl */
 	}
-
-	/* If no names matched, then return NULL. */
-	return ((char *)NULL);
+#endif
+	return NULL; /* no matches */
 }
 
 static char **cmdcomplete(char *text, int start, int end)
@@ -400,15 +524,14 @@ static char *stripwhite(char *string)
 	return s;
 }
 
-static void fullline(void) 
+static void fullline(void)
 {
 	char *stripped;
 
 	stripped = stripwhite(rl_line_buffer);
-
 	if (*stripped) {
 		add_history(stripped);
-		cmdexec(stripped);
+		cmdexec(stripped, 0);
 	}
 
 	return;
@@ -420,6 +543,7 @@ static int modinit(struct nafmodule *mod)
 	struct nafconn *in;
 
 	nafconsole__module = mod;
+	nafconsole__macrolist = NULL;
 
 	if (naf_curappinfo.nai_name) {
 		int plen;
@@ -441,7 +565,7 @@ static int modinit(struct nafmodule *mod)
 	}
 
 	/*
-	 * It seems that, on Linux at least, when you set stdin 
+	 * It seems that, on Linux at least, when you set stdin
 	 * non-blocking, as naf_conn_addconn() does as a side-effect,
 	 * that stdout also becomes non-blocking.  Which just seems
 	 * broken to me, but whether it's right or not, the effect is
@@ -451,6 +575,9 @@ static int modinit(struct nafmodule *mod)
 	 * Manually set stdout blocking again.
 	 */
 	fcntl(STDOUT_FILENO, F_SETFL, 0);
+
+	if (!nafconsole__macrolist)
+		macro_adddefaults();
 
 	rl_attempted_completion_function = (CPPFunction *)cmdcomplete;
 
@@ -465,6 +592,7 @@ static int modshutdown(struct nafmodule *mod)
 
 	rl_callback_handler_remove();
 
+	macro_remall();
 	nafconsole__module = NULL;
 
 	return 0;
@@ -490,6 +618,119 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 	return -1;
 }
 
+static const char *macro_syncconf__getexpansion(const char *cmd)
+{
+	char buf[128];
+
+	snprintf(buf, sizeof(buf), "macro[%s][expansion]", cmd);
+	return naf_config_getmodparmstr(nafconsole__module, buf);
+}
+
+static void macro_syncconf__addnew(const char *inlist)
+{
+	char *list, *c;
+
+	if (!(list = naf_strdup(nafconsole__module, inlist)))
+		return;
+	c = strtok(list, ",");
+	do {
+		if (!c)
+			break;
+
+		if (!macro_find(c)) {
+			const char *def;
+
+			def = macro_syncconf__getexpansion(c);
+			if (!def) {
+				dvprintf(nafconsole__module, "configuration error: macro '%s' enabled but not defined\n", c);
+				continue;
+			}
+
+			macro_add(c, def);
+		}
+	} while ((c = strtok(NULL, ",")));
+
+	naf_free(nafconsole__module, list);
+	return;
+}
+
+static int macro_syncconf__isconfigured(const char *inlist, const char *cmd)
+{
+	char *list, *c;
+	int ret = 0;
+
+	if (!(list = naf_strdup(nafconsole__module, inlist)))
+		return 0;
+	c = strtok(list, ",");
+	do {
+		if (!c)
+			break;
+		if (strcmp(c, cmd) == 0) {
+			ret = 1;
+			goto out;
+		}
+	} while ((c = strtok(NULL, ",")));
+
+out:
+	naf_free(nafconsole__module, list);
+	return ret;
+}
+
+static void macro_syncconf__updateold(const char *inlist)
+{
+	struct macro *mac, **map;
+
+	for (map = &nafconsole__macrolist; (mac = *map); ) {
+		const char *def = NULL;
+
+		if (macro_syncconf__isconfigured(inlist, mac->ma_cmd))
+			def = macro_syncconf__getexpansion(mac->ma_cmd);
+
+		if (def) {
+			naf_free(nafconsole__module, mac->ma_def);
+			mac->ma_def = naf_strdup(nafconsole__module, def);
+			map = &mac->ma__next;
+		} else {
+			*map = mac->ma__next;
+			macro__free(mac);
+		}
+	}
+	return;
+}
+
+static void macro_syncconf(void)
+{
+	char *conflist;
+
+	conflist = naf_config_getmodparmstr(nafconsole__module, "usemacros");
+	if (!conflist) {
+		macro_remall();
+		macro_adddefaults();
+		return;
+	}
+	macro_syncconf__addnew(conflist);
+	macro_syncconf__updateold(conflist);
+
+	return;
+}
+
+static void signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
+{
+
+	if (signum == NAF_SIGNAL_CONFCHANGE) {
+		char *str;
+
+		if ((str = naf_config_getmodparmstr(mod, "debug")))
+			nafconsole__debug = atoi(str);
+		if (nafconsole__debug == -1)
+			nafconsole__debug = NAFCONSOLE_DEBUG_DEFAULT;
+
+		macro_syncconf();
+	}
+
+	return;
+}
+
 int nafmodulemain(struct nafmodule *mod)
 {
 
@@ -497,6 +738,8 @@ int nafmodulemain(struct nafmodule *mod)
 	mod->init = modinit;
 	mod->shutdown = modshutdown;
 	mod->connready = connready;
+	mod->signal = signalhandler;
 
 	return 0;
 }
+

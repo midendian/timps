@@ -117,6 +117,13 @@ systemlogfile=timps-system.log
 [module=gnr]
 debug=10
 
+[module=nafconsole]
+; you can use these to make nafconsole a little more pleasant.
+usemacros=help,memuse,users
+macro[help][expansion]=call rpc->help()
+macro[memuse][expansion]=call core->modmemoryuse()
+macro[users][expansion]=call gnr->listnodes()
+
 ----- /SNIP -----
 
 
