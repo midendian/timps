@@ -16,6 +16,9 @@ FAIM_LIBS=
 # this are only relevent for linking the core, not the plugins
 NAF_LDADD="\$(top_srcdir)/libmx/src/libmx.la \$(top_srcdir)/libnbio/src/libnbio.a -lexpat"
 
+# gcc3.x changed to C99, which has this lovely feature-bug that breaks NAF tags.
+CFLAGS="-fno-strict-aliasing"
+
 # XXX this is not at all up to date.
 AC_CHECK_HEADERS(unistd.h sys/types.h sys/socket.h netinet/in.h netdb.h sys/time.h)
 
