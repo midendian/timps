@@ -103,9 +103,21 @@ struct nafconn {
 	naf_u32_t flags;
 	time_t lastrx; /* only used for connection type assumptions */
 	time_t lastrx2; /* used for timing out the RAWWAITING condition */
+
 	struct nafconn *endpoint;
+
 	struct sockaddr_in remoteendpoint; /* address of remote host */
 	struct sockaddr_in localendpoint; /* address of local interface */
+	/*
+	 * When naf is used as a transparent proxy server -- that is,
+	 * connections to some third party get rerouted to us without the
+	 * originator knowing about it -- getpeername() may not work, so
+	 * the above remoteendpoint field will be set to some other value.
+	 *
+	 * Linux (and I assume other mechanisms) offer a way to determine
+	 * the original destination of the connection.  That is placed here.
+	 */
+	struct sockaddr_in origremoteendpoint;
 
 	/*
 	 * In some cases, there is a parental relationship between connections.

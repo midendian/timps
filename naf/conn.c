@@ -62,6 +62,9 @@
 #ifdef HAVE_TIME_H
 #include <time.h>
 #endif
+#ifdef HAVE_LINUX_NETFILTER_IPV4_H
+#include <linux/netfilter_ipv4.h> /* XXX */
+#endif
 
 #include <naf/nafmodule.h>
 #include <naf/nafrpc.h>
@@ -368,7 +371,8 @@ static int connhandler_read(nbio_fd_t *fdt)
 
 		if (conn->owner->connready(conn->owner, conn, NAF_CONN_READY_READ) == -1) {
 			naf_conn_free(conn);
-		}
+		} else
+			updaterawmode(conn);
 
 	} else {
 		dvprintf(ourmodule, "READ on %d\n", conn->fdt->fd);
@@ -533,6 +537,7 @@ static int fillendpoints(struct nafconn *conn)
 	if (conn->fdt) {
 		int remotesize = sizeof(conn->remoteendpoint);
 		int localsize = sizeof(conn->localendpoint);
+		int origremotesize = sizeof(conn->origremoteendpoint);
 
 		if ((getsockname(conn->fdt->fd, (struct sockaddr *)&conn->localendpoint, &localsize) == 0)) {
 			if (conndebug) {
@@ -546,6 +551,23 @@ static int fillendpoints(struct nafconn *conn)
 				dvprintf(ourmodule, "[fd %d, cid %d] remote = %s:%u\n", conn->fdt->fd, conn->cid, inet_ntoa(((struct sockaddr_in *)&conn->remoteendpoint)->sin_addr), ntohs(((struct sockaddr_in *)&conn->remoteendpoint)->sin_port));
 			}
 		}
+
+		/*
+		 * On Linux you can do this in two ways, neither of which are
+		 * portable: (1) the SO_ORIGINAL_DST socket option offered by
+		 * Netfilter; (2) somehow parsing /proc.  Even the kernel
+		 * code recommends lazyness, and therefore against trying to
+		 * make sense of /proc.
+		 */
+#ifdef HAVE_LINUX_NETFILTER_IPV4_H
+		if ((getsockopt(conn->fdt->fd, IPPROTO_IP, SO_ORIGINAL_DST, &conn->origremoteendpoint, &origremotesize) == 0)) {
+			if (conndebug) {
+				dvprintf(ourmodule, "[fd %d, cid %d] original remote = %s:%u\n", conn->fdt->fd, conn->cid, inet_ntoa(((struct sockaddr_in *)&conn->origremoteendpoint)->sin_addr), ntohs(((struct sockaddr_in *)&conn->origremoteendpoint)->sin_port));
+			}
+		}
+#else
+		memcpy(&conn->origremoteendpoint, &conn->remoteendpoint, sizeof(struct sockaddr_in));
+#endif
 	}
 
 	return 0;
@@ -1028,7 +1050,7 @@ static void __rpc_conn_getconninfo(struct nafmodule *mod, naf_rpc_req_t *req)
 		}
 		lci.wanttags = wt->data.boolean;
 	}
-	
+
 	naf_conn_find(mod, listconns_matcher, (void *)&lci);
 
 	req->status = NAF_RPC_STATUS_SUCCESS;

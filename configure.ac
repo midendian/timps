@@ -22,7 +22,7 @@ AC_CHECK_LIB(expat, XML_Parse,
 	EXPAT_LIBS="-lexpat",
 	EXPAT_CFLAGS="-DNOXML")
 
-AC_CHECK_HEADERS(unistd.h sys/types.h sys/socket.h netinet/in.h netdb.h sys/time.h ctype.h stdlib.h sys/stat.h string.h sys/resource.h pwd.h grp.h stdio.h errno.h syslog.h time.h sys/poll.h stdarg.h arpa/inet.h signal.h sys/mman.h sys/wait.h fcntl.h)
+AC_CHECK_HEADERS(unistd.h sys/types.h sys/socket.h netinet/in.h netdb.h sys/time.h ctype.h stdlib.h sys/stat.h string.h sys/resource.h pwd.h grp.h stdio.h errno.h syslog.h time.h sys/poll.h stdarg.h arpa/inet.h signal.h sys/mman.h sys/wait.h fcntl.h linux/netfilter_ipv4.h)
 
 AC_CHECK_LIB(dl, dlopen, NAF_LDADD="-ldl $NAF_LDADD")
 AC_SUBST(NAF_LDADD)
