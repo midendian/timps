@@ -1,5 +1,6 @@
 
 #include <string.h>
+#include <stdlib.h>
 
 #include <naf/nafmodule.h>
 #include <naf/nafconn.h>
@@ -10,6 +11,9 @@
 #include "oscar_internal.h"
 #include "snac.h"
 #include "im.h"
+#include "flap.h"
+
+#define MSGCOOKIELEN 8
 
 static char *
 toscar_icbm__extractmsgtext(struct nafmodule *mod, naf_tlv_t *msgtlv)
@@ -82,6 +86,46 @@ out:
 }
 
 static int
+_naf_tlv_addoscarmsgblock(struct nafmodule *mod, naf_tlv_t **tlvh, naf_u16_t type, const char *msgtext)
+{
+	naf_u8_t *buf;
+	int buflen;
+	naf_sbuf_t sb;
+
+	if (!mod || !tlvh || !msgtext)
+		return -1;
+
+	/* I hope you like (seemingly) magic numbers. */
+
+	buflen = 2 + 2 + 4 + 2 + 2 + 4 + strlen(msgtext);
+	if (!(buf = naf_malloc(mod, buflen)))
+		return -1;
+	naf_sbuf_init(mod, &sb, buf, buflen);
+
+	naf_sbuf_put8(&sb, 0x05);
+	naf_sbuf_put8(&sb, 0x01);
+
+	naf_sbuf_put16(&sb, 0x0004);
+		naf_sbuf_put8(&sb, 0x01);
+		naf_sbuf_put8(&sb, 0x01);
+		naf_sbuf_put8(&sb, 0x01);
+		naf_sbuf_put8(&sb, 0x02);
+
+	naf_sbuf_put8(&sb, 0x01);
+	naf_sbuf_put8(&sb, 0x01);
+	naf_sbuf_put16(&sb, strlen(msgtext) + 4);
+		naf_sbuf_put16(&sb, 0x0000); /* assume ASCII encoding */
+		naf_sbuf_put16(&sb, 0x0000);
+		naf_sbuf_putstr(&sb, msgtext);
+
+	naf_tlv_addraw(mod, tlvh, type, naf_sbuf_getpos(&sb), buf);
+
+	naf_free(mod, buf);
+
+	return 0;
+}
+
+static int
 toscar_icbm__parsechan1(struct nafmodule *mod, struct nafconn *conn, struct gnrmsg *gm, naf_tlv_t **tlvh)
 {
 	naf_tlv_t *tlv;
@@ -111,6 +155,44 @@ toscar_icbm__parsechan1(struct nafmodule *mod, struct nafconn *conn, struct gnrm
 	return 0;
 }
 
+static int
+toscar_icbm__renderchan1(struct nafmodule *mod, struct gnrmsg *gm, naf_sbuf_t *sb)
+{
+	naf_tlv_t *msgtlv = NULL;
+	naf_tlv_t *tlvh = NULL;
+	naf_tlv_t *extratlvs = NULL;
+
+
+	/*
+	 * Hopefully no one modified gm->msgtext on us, so we can just
+	 * send the cached msgtlv without regenerating it.
+	 */
+	gnr_msg_tag_fetch(mod, gm, "gnrmsg.oscarmsgtlv", NULL, (void **)&msgtlv);
+	if (msgtlv)
+		naf_tlv_render(mod, msgtlv, sb);
+	else {
+		/* If we don't have one, make one... */
+		_naf_tlv_addoscarmsgblock(mod, &msgtlv, 0x0002, gm->msgtext);
+		naf_tlv_render(mod, tlvh, sb);
+		naf_tlv_free(mod, msgtlv);
+	}
+
+
+	if (gm->msgflags & GNR_MSG_MSGFLAG_ACKREQUESTED)
+		naf_tlv_addnoval(mod, &tlvh, 0x0003);
+	if (gm->msgflags & GNR_MSG_MSGFLAG_AUTORESPONSE)
+		naf_tlv_addnoval(mod, &tlvh, 0x0004);
+	naf_tlv_render(mod, tlvh, sb);
+	naf_tlv_free(mod, tlvh);
+
+
+	gnr_msg_tag_fetch(mod, gm, "gnrmsg.extraoscartlvs", NULL, (void **)&extratlvs);
+	if (extratlvs)
+		naf_tlv_render(mod, extratlvs, sb);
+
+	return 0;
+}
+
 /*
  * 0004/0006 (client->server) Outgoing IM (ICBM)
  *
@@ -119,7 +201,7 @@ toscar_icbm__parsechan1(struct nafmodule *mod, struct nafconn *conn, struct gnrm
 int
 toscar_snachandler_0004_0006(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
 {
-	int ret = HRET_FORWARD;
+	int ret = HRET_DIGESTED;
 
 	naf_u8_t *msgck = NULL;
 	naf_u16_t msgchan;
@@ -138,7 +220,7 @@ toscar_snachandler_0004_0006(struct nafmodule *mod, struct nafconn *conn, struct
 	}
 
 
-	if (!(msgck = naf_sbuf_getraw(mod, &snac->payload, 8))) {
+	if (!(msgck = naf_sbuf_getraw(mod, &snac->payload, MSGCOOKIELEN))) {
 		ret = HRET_ERROR;
 		goto out;
 	}
@@ -161,7 +243,7 @@ toscar_snachandler_0004_0006(struct nafmodule *mod, struct nafconn *conn, struct
 		ret = HRET_ERROR;
 		goto out;
 	}
-	if (gnr_msg_tag_add(mod, gm, "gnrmsg.oscarmsgcookie", 'V', (void **)msgck) == -1) {
+	if (gnr_msg_tag_add(mod, gm, "gnrmsg.oscarmsgcookie", 'V', (void *)msgck) == -1) {
 		ret = HRET_ERROR;
 		goto out;
 	}
@@ -219,60 +301,6 @@ out:
 	return ret;
 }
 
-struct touserinfo {
-	char *sn;
-	naf_u16_t evillevel;
-	naf_tlv_t *tlvh;
-};
-
-static struct touserinfo *
-touserinfo__alloc(struct nafmodule *mod)
-{
-	struct touserinfo *toui;
-
-	if (!(toui = naf_malloc(mod, sizeof(struct touserinfo))))
-		return NULL;
-	memset(toui, 0, sizeof(struct touserinfo));
-
-	return toui;
-}
-
-static void
-touserinfo_free(struct nafmodule *mod, struct touserinfo *toui)
-{
-
-	if (!mod || !toui)
-		return;
-
-	naf_tlv_free(mod, toui->tlvh);
-	naf_free(mod, toui->sn);
-	naf_free(mod, toui);
-
-	return;
-}
-
-static struct touserinfo *
-touserinfo_extract(struct nafmodule *mod, naf_sbuf_t *sb)
-{
-	struct touserinfo *toui;
-	naf_u8_t snlen;
-	naf_u16_t tlvcnt;
-
-	if (!(toui = touserinfo__alloc(mod)))
-		return NULL;
-
-	snlen = naf_sbuf_get8(sb);
-	if (!(toui->sn = naf_sbuf_getstr(mod, sb, snlen)))
-		goto errout;
-	toui->evillevel = naf_sbuf_get16(sb);
-	tlvcnt = naf_sbuf_get16(sb);
-	toui->tlvh = naf_tlv_parse_limit(mod, sb, tlvcnt);
-
-	return toui;
-errout:
-	touserinfo_free(mod, toui);
-	return NULL;
-}
 
 /*
  * 0004/0007 (server->client) Incoming IM (ICBM)
@@ -283,7 +311,7 @@ errout:
 int
 toscar_snachandler_0004_0007(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
 {
-	int ret = HRET_FORWARD;
+	int ret = HRET_DIGESTED;
 
 	naf_u8_t *msgck = NULL;
 	naf_u16_t msgchan;
@@ -302,7 +330,7 @@ toscar_snachandler_0004_0007(struct nafmodule *mod, struct nafconn *conn, struct
 	}
 
 
-	if (!(msgck = naf_sbuf_getraw(mod, &snac->payload, 8))) {
+	if (!(msgck = naf_sbuf_getraw(mod, &snac->payload, MSGCOOKIELEN))) {
 		ret = HRET_ERROR;
 		goto out;
 	}
@@ -324,7 +352,7 @@ toscar_snachandler_0004_0007(struct nafmodule *mod, struct nafconn *conn, struct
 		ret = HRET_ERROR;
 		goto out;
 	}
-	if (gnr_msg_tag_add(mod, gm, "gnrmsg.oscarmsgcookie", 'V', (void **)msgck) == -1) {
+	if (gnr_msg_tag_add(mod, gm, "gnrmsg.oscarmsgcookie", 'V', (void *)msgck) == -1) {
 		ret = HRET_ERROR;
 		goto out;
 	}
@@ -348,6 +376,12 @@ toscar_snachandler_0004_0007(struct nafmodule *mod, struct nafconn *conn, struct
 		ret = HRET_FORWARD;
 		goto out;
 	}
+
+	if (gnr_msg_tag_add(mod, gm, "gnrmsg.srcuserinfo", 'V', (void *)srcinfo) == -1) {
+		ret = HRET_ERROR;
+		goto out;
+	}
+	srcinfo = NULL;
 
 	/*
 	 * Pass along remaining unknown TLVs;
@@ -377,6 +411,147 @@ out:
 	naf_free(mod, msgck);
 	return ret;
 	return HRET_FORWARD;
+}
+
+int
+toscar_icbm_sendoutgoing(struct nafmodule *mod, struct nafconn *conn, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
+{
+	naf_u32_t snacid = 0x42424242;
+	naf_u8_t *msgck = NULL;
+	naf_u16_t icbmchan;
+
+	naf_sbuf_t sb;
+
+
+	if (gm->type == GNR_MSG_MSGTYPE_IM)
+		icbmchan = 0x0001;
+	else if ((gm->type == GNR_MSG_MSGTYPE_GROUPINVITE) ||
+			(gm->type == GNR_MSG_MSGTYPE_RENDEZVOUS))
+		icbmchan = 0x0002;
+	else
+		return -1; /* not valid for this context */
+	
+	if (icbmchan != 0x0001)
+		return -1; /* XXX generate the other types... */
+
+
+	gnr_msg_tag_fetch(mod, gm, "gnrmsg.snacid", NULL, (void **)&snacid);
+	gnr_msg_tag_fetch(mod, gm, "gnrmsg.oscarmsgcookie", NULL, (void **)&msgck);
+
+
+	snacid &= ~0x80000000; /* unset server bit */
+
+	if (toscar_newsnacsb(mod, &sb, 0x0004, 0x0006, 0x0000, snacid) == -1)
+		return -1;
+
+	if (msgck)
+		naf_sbuf_putraw(&sb, msgck, MSGCOOKIELEN);
+	else {
+		int i;
+
+		/* make one up */
+		for (i = 0; i < MSGCOOKIELEN; i++)
+			naf_sbuf_put8(&sb, '0' + ((naf_u8_t) rand() % 10));
+	}
+
+	naf_sbuf_put16(&sb, icbmchan);
+
+	naf_sbuf_put8(&sb, strlen(gm->destname));
+	naf_sbuf_putstr(&sb, gm->destname);
+
+	if (icbmchan == 0x0001) {
+		if (toscar_icbm__renderchan1(mod, gm, &sb) == -1)
+			goto errout;
+	} else if (icbmchan == 0x0002)
+		; /* XXX rendezvous / chat invites / icons / whatever */
+
+
+	if (toscar_flap_sendsbuf_consume(mod, conn, &sb) == -1)
+		goto errout;
+
+	return 0;
+errout:
+	naf_sbuf_free(mod, &sb);
+	return -1;
+}
+
+int
+toscar_icbm_sendincoming(struct nafmodule *mod, struct nafconn *conn, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
+{
+	naf_u32_t snacid = 0x42424242;
+	naf_u8_t *msgck = NULL;
+	struct touserinfo *srcinfo = NULL;
+	naf_u16_t icbmchan;
+
+	naf_sbuf_t sb;
+
+
+	if (gm->type == GNR_MSG_MSGTYPE_IM)
+		icbmchan = 0x0001;
+	else if ((gm->type == GNR_MSG_MSGTYPE_GROUPINVITE) ||
+			(gm->type == GNR_MSG_MSGTYPE_RENDEZVOUS))
+		icbmchan = 0x0002;
+	else
+		return -1; /* not valid for this context */
+	
+	if (icbmchan != 0x0001)
+		return -1; /* XXX generate the other types... */
+
+
+	gnr_msg_tag_fetch(mod, gm, "gnrmsg.snacid", NULL, (void **)&snacid);
+	gnr_msg_tag_fetch(mod, gm, "gnrmsg.oscarmsgcookie", NULL, (void **)&msgck);
+	gnr_msg_tag_fetch(mod, gm, "gnrmsg.srcuserinfo", NULL, (void **)&srcinfo);
+
+
+	snacid |= 0x80000000; /* server bit */
+
+	if (toscar_newsnacsb(mod, &sb, 0x0004, 0x0007, 0x0000, snacid) == -1)
+		return -1;
+
+	if (msgck)
+		naf_sbuf_putraw(&sb, msgck, MSGCOOKIELEN);
+	else {
+		int i;
+
+		/* make one up */
+		for (i = 0; i < MSGCOOKIELEN; i++)
+			naf_sbuf_put8(&sb, '0' + ((naf_u8_t) rand() % 10));
+	}
+
+	naf_sbuf_put16(&sb, icbmchan);
+
+	if (srcinfo)
+		touserinfo_render(mod, srcinfo, &sb);
+	else {
+		struct touserinfo *toui;
+
+		if (!(toui = touserinfo_new(mod, gm->srcname)))
+			goto errout;
+
+		/* XXX need to add fake some info here? */
+
+		touserinfo_render(mod, toui, &sb);
+
+		touserinfo_free(mod, toui);
+	}
+
+	/* don't send this to clients */
+	gm->msgflags &= ~GNR_MSG_MSGFLAG_ACKREQUESTED;
+
+	if (icbmchan == 0x0001) {
+		if (toscar_icbm__renderchan1(mod, gm, &sb) == -1)
+			goto errout;
+	} else if (icbmchan == 0x0002)
+		; /* XXX rendezvous / chat invites / icons / whatever */
+
+
+	if (toscar_flap_sendsbuf_consume(mod, conn, &sb) == -1)
+		goto errout;
+
+	return 0;
+errout:
+	naf_sbuf_free(mod, &sb);
+	return -1;
 }
 
 

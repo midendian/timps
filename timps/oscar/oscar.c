@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <ctype.h>
 
 #include <naf/nafmodule.h>
 #include <naf/nafconfig.h>
@@ -13,6 +14,7 @@
 #include "oscar_internal.h"
 #include "flap.h"
 #include "ckcache.h"
+#include "im.h"
 
 
 #define TIMPS_OSCAR_DEBUG_DEFAULT 0
@@ -31,11 +33,38 @@ toscar_msgrouting(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct gn
 
 	/* If the target is local and one of ours, take it. */
 	if ((gmhi->destnode->metric == GNR_NODE_METRIC_LOCAL) &&
-			(gmhi->destnode->ownermod == mod))
+					(gmhi->destnode->ownermod == mod)) {
+		gm->routeflags |= GNR_MSG_ROUTEFLAG_ROUTED_LOCAL; 
 		return 1;
+	}
+
 	/* If the source is local and one of ours, take it. */
 	if ((gmhi->srcnode->metric == GNR_NODE_METRIC_LOCAL) &&
-			(gmhi->srcnode->ownermod == mod))
+					(gmhi->srcnode->ownermod == mod)) {
+		gm->routeflags |= GNR_MSG_ROUTEFLAG_ROUTED_FORWARD; 
+		return 1;
+	}
+
+	return 0;
+}
+
+int
+toscar_sncmp(const char *sn1, const char *sn2)
+{
+	const char *p1, *p2;
+
+	for (p1 = sn1, p2 = sn2; *p1 && *p2; p1++, p2++) {
+
+		while (*p1 == ' ')
+			p1++;
+		while (*p2 == ' ')
+			p2++;
+		if (toupper(*p1) != toupper(*p2))
+			return 1;
+	}
+
+	/* should both be NULL */
+	if (*p1 != *p2)
 		return 1;
 
 	return 0;
@@ -44,8 +73,7 @@ toscar_msgrouting(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct gn
 static int
 toscar_gnroutputfunc(struct nafmodule *mod, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
 {
-	/* XXX */
-	
+
 	if (timps_oscar__debug > 0) {
 		dvprintf(mod, "toscar_gnroutputfunc: type = %d, to = '%s'[%s](%d), from = '%s'[%s](%d), msg = (%s) '%s'\n",
 				gm->type,
@@ -55,6 +83,29 @@ toscar_gnroutputfunc(struct nafmodule *mod, struct gnrmsg *gm, struct gnrmsg_han
 				gmhi->destnode ? gmhi->destnode->metric : -1,
 				gm->msgtexttype ? gm->msgtexttype : "type not specified",
 				gm->msgtext);
+	}
+
+	if (gmhi->destnode->metric == GNR_NODE_METRIC_LOCAL) {
+		struct nafconn *conn;
+
+		if (!(conn = toscar__findconn(mod, gmhi->destnode->name))) {
+			if (timps_oscar__debug > 0)
+				dvprintf(mod, "gnroutputfunc(local): unable to find connection for local node '%s'[%s]\n", gmhi->destnode->name, gmhi->destnode->service);
+			return -1;
+		}
+
+		toscar_icbm_sendincoming(mod, conn->endpoint, gm, gmhi);
+
+	} else if (gmhi->srcnode->metric == GNR_NODE_METRIC_LOCAL) {
+		struct nafconn *conn;
+
+		if (!(conn = toscar__findconn(mod, gmhi->srcnode->name))) {
+			if (timps_oscar__debug > 0)
+				dvprintf(mod, "gnroutputfunc(forward): unable to find connection for local node '%s'[%s]\n", gmhi->srcnode->name, gmhi->srcnode->service);
+			return -1;
+		}
+
+		toscar_icbm_sendoutgoing(mod, conn, gm, gmhi);
 	}
 
 	return 0;

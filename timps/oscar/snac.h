@@ -25,5 +25,15 @@ int toscar_newsnacsb(struct nafmodule *mod, naf_sbuf_t *sb, naf_u16_t group, naf
 int toscar_auth_sendauthinforequest(struct nafmodule *mod, struct nafconn *conn, naf_u32_t snacid, naf_tlv_t *tlvh);
 
 
+struct touserinfo {
+	char *sn;
+	naf_u16_t evillevel;
+	naf_tlv_t *tlvh;
+};
+void touserinfo_free(struct nafmodule *mod, struct touserinfo *toui);
+struct touserinfo *touserinfo_new(struct nafmodule *mod, const char *sn);
+struct touserinfo *touserinfo_extract(struct nafmodule *mod, naf_sbuf_t *sb);
+int touserinfo_render(struct nafmodule *mod, struct touserinfo *toui, naf_sbuf_t *sb);
+
 #endif /* __SNAC_H__ */
 

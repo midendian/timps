@@ -410,3 +410,30 @@ toscar_flap_handlewrite(struct nafmodule *mod, struct nafconn *conn)
 	return 0;
 }
 
+
+static int
+toscar__findconn__matcher(struct nafmodule *mod, struct nafconn *conn, const void *udata)
+{
+	const char *sn = (const char *)udata;
+	char *cursn = NULL;
+
+	if (!(conn->type & NAF_CONN_TYPE_SERVER))
+		return 0;
+
+	if ((naf_conn_tag_fetch(mod, conn, "conn.screenname", NULL, (void **)&cursn) == -1) || !cursn)
+		return 0;
+
+	if (toscar_sncmp(sn, cursn) != 0)
+		return 0;
+
+	return 1; /* found it */
+}
+
+/* !!! Avoid using this. */
+struct nafconn *
+toscar__findconn(struct nafmodule *mod, const char *sn)
+{
+	return naf_conn_find(mod, toscar__findconn__matcher, (void *)sn);
+}
+
+

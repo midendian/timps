@@ -16,5 +16,7 @@ extern char *timps_oscar__authorizer;
 /* the service name we use for gnr nodes/messages */
 #define OSCARSERVICE "AIM"
 
+int toscar_sncmp(const char *sn1, const char *sn2);
+
 #endif /* ndef __OSCAR_INTERNAL_H__ */
 

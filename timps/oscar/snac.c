@@ -29,6 +29,90 @@ toscar_newsnacsb(struct nafmodule *mod, naf_sbuf_t *sb, naf_u16_t group, naf_u16
 	return 0;
 }
 
+
+static struct touserinfo *
+touserinfo__alloc(struct nafmodule *mod)
+{
+	struct touserinfo *toui;
+
+	if (!(toui = naf_malloc(mod, sizeof(struct touserinfo))))
+		return NULL;
+	memset(toui, 0, sizeof(struct touserinfo));
+
+	return toui;
+}
+
+void
+touserinfo_free(struct nafmodule *mod, struct touserinfo *toui)
+{
+
+	if (!mod || !toui)
+		return;
+
+	naf_tlv_free(mod, toui->tlvh);
+	naf_free(mod, toui->sn);
+	naf_free(mod, toui);
+
+	return;
+}
+
+struct touserinfo *
+touserinfo_new(struct nafmodule *mod, const char *sn)
+{
+	struct touserinfo *toui;
+
+	if (!mod || !sn)
+		return NULL;
+
+	if (!(toui = touserinfo__alloc(mod)))
+		return NULL;
+	if (!(toui->sn = naf_strdup(mod, sn))) {
+		touserinfo_free(mod, toui);
+		return NULL;
+	}
+
+	return toui;
+}
+
+struct touserinfo *
+touserinfo_extract(struct nafmodule *mod, naf_sbuf_t *sb)
+{
+	struct touserinfo *toui;
+	naf_u8_t snlen;
+	naf_u16_t tlvcnt;
+
+	if (!(toui = touserinfo__alloc(mod)))
+		return NULL;
+
+	snlen = naf_sbuf_get8(sb);
+	if (!(toui->sn = naf_sbuf_getstr(mod, sb, snlen)))
+		goto errout;
+	toui->evillevel = naf_sbuf_get16(sb);
+	tlvcnt = naf_sbuf_get16(sb);
+	toui->tlvh = naf_tlv_parse_limit(mod, sb, tlvcnt);
+
+	return toui;
+errout:
+	touserinfo_free(mod, toui);
+	return NULL;
+}
+
+int touserinfo_render(struct nafmodule *mod, struct touserinfo *toui, naf_sbuf_t *sb)
+{
+
+	if (!mod || !toui || !sb)
+		return -1;
+
+	naf_sbuf_put8(sb, strlen(toui->sn));
+	naf_sbuf_putstr(sb, toui->sn);
+	naf_sbuf_put16(sb, toui->evillevel);
+	naf_sbuf_put16(sb, naf_tlv_gettotallength(mod, toui->tlvh));
+	naf_tlv_render(mod, toui->tlvh, sb);
+
+	return 0;
+}
+
+
 /*
  * 0001/0002 (client->server) Client Online
  *
