@@ -147,6 +147,25 @@ toscar_snachandler_0001_0002(struct nafmodule *mod, struct nafconn *conn, struct
 	return HRET_FORWARD;
 }
 
+/*
+ * 0001/000b (server->client) Server Pause
+ *
+ * This is the first step in migration, where the server moves the client to a
+ * different server.
+ *
+ */
+static int
+toscar_snachandler_0001_000b(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
+{
+	char *sn = NULL;
+
+	naf_conn_tag_fetch(mod, conn, "conn.screenname", NULL, (void **)&sn);
+
+	dvprintf(mod, "[cid %lu] [%s] received server pause; disconnecting for safety\n", conn->cid, sn);
+
+	return HRET_ERROR;
+}
+
 static int
 toscar_auth_sendfail(struct nafmodule *mod, struct nafconn *conn, const char *sn, naf_u16_t code, const char *errurl)
 {
@@ -359,6 +378,7 @@ static struct snachandler {
 	toscar_snachandler_t handler;
 } toscar__snachandlers[] = {
 	{0x0001, 0x0002, toscar_snachandler_0001_0002},
+	{0x0001, 0x000b, toscar_snachandler_0001_000b},
 	{0x0004, 0x0006, toscar_snachandler_0004_0006},
 	{0x0004, 0x0007, toscar_snachandler_0004_0007},
 	{0x0017, 0x0003, toscar_snachandler_0017_0003},
