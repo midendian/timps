@@ -388,19 +388,19 @@ toscar_flap_handleread(struct nafmodule *mod, struct nafconn *conn)
 
 
 	if (FLAPHDR_CHAN(buf) == 0x01)
-		hret = toscar_flap_handlechan1(mod, conn, buf, buflen);
+		hret = toscar_flap_handlechan1(mod, conn, buf, (naf_u16_t)buflen);
 	else if (FLAPHDR_CHAN(buf) == 0x02)
-		hret = toscar_flap_handlesnac(mod, conn, buf + FLAPHDRLEN, buflen - FLAPHDRLEN);
+		hret = toscar_flap_handlesnac(mod, conn, buf + FLAPHDRLEN, (naf_u16_t)(buflen - FLAPHDRLEN));
 	else if (FLAPHDR_CHAN(buf) == 0x04)
-		hret = toscar_flap_handlechan4(mod, conn, buf, buflen);
+		hret = toscar_flap_handlechan4(mod, conn, buf, (naf_u16_t)buflen);
 	else if (FLAPHDR_CHAN(buf) == 0x05)
-		hret = toscar_flap_handlechan5(mod, conn, buf, buflen);
+		hret = toscar_flap_handlechan5(mod, conn, buf, (naf_u16_t)buflen);
 
 
 	if (hret == HRET_ERROR)
 		goto errout;
 	else if ((hret == HRET_FORWARD) && conn->endpoint) {
-		if (toscar_flap__sendraw(mod, conn->endpoint, buf, buflen) == -1)
+		if (toscar_flap__sendraw(mod, conn->endpoint, buf, (naf_u16_t)buflen) == -1)
 			goto errout;
 		buf = NULL; /* consumed by sendraw */
 	}

@@ -129,10 +129,10 @@ int touserinfo_render(struct nafmodule *mod, struct touserinfo *toui, naf_sbuf_t
 	if (!mod || !toui || !sb)
 		return -1;
 
-	naf_sbuf_put8(sb, strlen(toui->sn));
+	naf_sbuf_put8(sb, (naf_u8_t)strlen(toui->sn));
 	naf_sbuf_putstr(sb, toui->sn);
 	naf_sbuf_put16(sb, toui->evillevel);
-	naf_sbuf_put16(sb, naf_tlv_gettotallength(mod, toui->tlvh));
+	naf_sbuf_put16(sb, (naf_u16_t)naf_tlv_gettotallength(mod, toui->tlvh));
 	naf_tlv_render(mod, toui->tlvh, sb);
 
 	return 0;
@@ -437,7 +437,9 @@ toscar_flap_handlesnac(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *bu
 		if (exthdrlen)
 			naf_sbuf_init(mod, &snac.extinfo, buf + SNACHDRLEN + 2, exthdrlen);
 	}
-	if (naf_sbuf_init(mod, &snac.payload, buf + SNACHDRLEN + (exthdrlen ? (2 + exthdrlen) : 0), buflen - SNACHDRLEN - (exthdrlen ? (2 + exthdrlen) : 0)) == -1) {
+	if (naf_sbuf_init(mod, &snac.payload,
+				buf + SNACHDRLEN + (exthdrlen ? (2 + exthdrlen) : 0),
+				(naf_u16_t)(buflen - SNACHDRLEN - (exthdrlen ? (2 + exthdrlen) : 0))) == -1) {
 		if (timps_oscar__debug > 0)
 			dvprintf(mod, "[cid %ld] failed to allocate sbuf for SNAC parsing\n", conn->cid);
 		hret = HRET_ERROR;

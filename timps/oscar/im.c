@@ -98,12 +98,12 @@ toscar_icbm__extractmsgtext(struct nafmodule *mod, naf_tlv_t *msgtlv)
 				naf_free(mod, msgtext);
 				msgtext = nmsgtext;
 			}
-			naf_sbuf_getrawbuf(&sb, (naf_u8_t *)msgtextend, plen - 2 - 2);
+			naf_sbuf_getrawbuf(&sb, (naf_u8_t *)msgtextend, (naf_u16_t)(plen - 2 - 2));
 			msgtextend += plen - 2 - 2;
 			*msgtextend = '\0';
 
 		} else
-			naf_sbuf_advance(&sb, plen - 2 - 2);
+			naf_sbuf_advance(&sb, (naf_u16_t)(plen - 2 - 2));
 
 		/* XXX translate UTF16 parts into &#nnnn; entities */
 	}
@@ -128,7 +128,7 @@ _naf_tlv_addoscarmsgblock(struct nafmodule *mod, naf_tlv_t **tlvh, naf_u16_t typ
 	buflen = 2 + 2 + 4 + 2 + 2 + 4 + strlen(msgtext);
 	if (!(buf = naf_malloc(mod, buflen)))
 		return -1;
-	naf_sbuf_init(mod, &sb, buf, buflen);
+	naf_sbuf_init(mod, &sb, buf, (naf_u16_t)buflen);
 
 	naf_sbuf_put8(&sb, 0x05);
 	naf_sbuf_put8(&sb, 0x01);
@@ -141,12 +141,12 @@ _naf_tlv_addoscarmsgblock(struct nafmodule *mod, naf_tlv_t **tlvh, naf_u16_t typ
 
 	naf_sbuf_put8(&sb, 0x01);
 	naf_sbuf_put8(&sb, 0x01);
-	naf_sbuf_put16(&sb, strlen(msgtext) + 4);
+	naf_sbuf_put16(&sb, (naf_u16_t)(strlen(msgtext) + 4));
 		naf_sbuf_put16(&sb, 0x0000); /* assume ASCII encoding */
 		naf_sbuf_put16(&sb, 0x0000);
 		naf_sbuf_putstr(&sb, msgtext);
 
-	naf_tlv_addraw(mod, tlvh, type, naf_sbuf_getpos(&sb), buf);
+	naf_tlv_addraw(mod, tlvh, type, (naf_u16_t)naf_sbuf_getpos(&sb), buf);
 
 	naf_free(mod, buf);
 
@@ -479,12 +479,12 @@ toscar_icbm_sendoutgoing(struct nafmodule *mod, struct nafconn *conn, struct gnr
 
 		/* make one up */
 		for (i = 0; i < MSGCOOKIELEN; i++)
-			naf_sbuf_put8(&sb, '0' + ((naf_u8_t) rand() % 10));
+			naf_sbuf_put8(&sb, (naf_u8_t)('0' + ((naf_u8_t) rand() % 10)));
 	}
 
 	naf_sbuf_put16(&sb, icbmchan);
 
-	naf_sbuf_put8(&sb, strlen(gm->destname));
+	naf_sbuf_put8(&sb, (naf_u8_t)strlen(gm->destname));
 	naf_sbuf_putstr(&sb, gm->destname);
 
 	if (icbmchan == 0x0001) {
@@ -543,7 +543,7 @@ toscar_icbm_sendincoming(struct nafmodule *mod, struct nafconn *conn, struct gnr
 
 		/* make one up */
 		for (i = 0; i < MSGCOOKIELEN; i++)
-			naf_sbuf_put8(&sb, '0' + ((naf_u8_t) rand() % 10));
+			naf_sbuf_put8(&sb, (naf_u8_t)('0' + ((naf_u8_t) rand() % 10)));
 	}
 
 	naf_sbuf_put16(&sb, icbmchan);
