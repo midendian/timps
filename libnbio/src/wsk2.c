@@ -58,7 +58,7 @@ static void wsa_seterrno(void)
 	else if (err == WSAESHUTDOWN)
 		errno = ESHUTDOWN;
 	else if (err == WSAEWOULDBLOCK)
-		errno = EAGAIN;
+		errno = EINPROGESS;
 	else if (err == WSAEMSGSIZE)
 		errno = EMSGSIZE;
 	else if (err == WSAEINVAL)
@@ -545,6 +545,7 @@ nbio_sockfd_t fdt_newlistener(unsigned short portnum)
 
 	/* bind all interfaces */
 	memset(&sin, 0, sizeof(struct sockaddr_in));
+	sin.sin_family = AF_INET;
 	sin.sin_port = portnum;
 
 	if ((sfd = fdt_newsocket(PF_INET, SOCK_STREAM)) == -1)
