@@ -1,3 +1,3 @@
 
-SUBDIRS = naf
+SUBDIRS = naf gnr
 

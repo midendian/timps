@@ -46,6 +46,7 @@ AC_OUTPUT([
 	Makefile
 	include/Makefile
 	include/naf/Makefile
+	include/gnr/Makefile
 	libnbio/Makefile
 	libnbio/include/Makefile
 	libnbio/src/Makefile
@@ -56,5 +57,6 @@ AC_OUTPUT([
 	modules/nafbasicmodule/Makefile
 	modules/nafconsole/Makefile
 	naf/Makefile
+	gnr/Makefile
 ])
 

@@ -1,4 +1,4 @@
 
-SUBDIRS = include libnbio libmx naf modules
+SUBDIRS = include libnbio libmx naf gnr modules
 
 
