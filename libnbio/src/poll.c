@@ -1,4 +1,20 @@
-/* -*- Mode: ab-c -*- */
+/*
+ * libnbio - Portable wrappers for non-blocking sockets
+ * Copyright (c) 2000-2005 Adam Fritzler <mid@zigamorph.net>, et al
+ *
+ * libnbio is free software; you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License (version 2.1) as published by
+ * the Free Software Foundation.
+ *
+ * libnbio is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -40,7 +56,7 @@ static int setpfdlast(nbio_t *nb)
 	struct pfdnbdata *pnd = (struct pfdnbdata *)nb->intdata;
 	int i;
 
-	for (i = pnd->pfdsize-1; (i > -1) && 
+	for (i = pnd->pfdsize-1; (i > -1) &&
 			(pnd->pfds[i].fd == NBIO_PFD_INVAL); i--)
 		;
 
@@ -95,7 +111,7 @@ static struct pollfd *findunusedpfd(nbio_t *nb)
 	struct pfdnbdata *pnd = (struct pfdnbdata *)nb->intdata;
 	int i;
 
-	for (i = 0; (i < pnd->pfdsize) && 
+	for (i = 0; (i < pnd->pfdsize) &&
 			(pnd->pfds[i].fd != NBIO_PFD_INVAL); i++)
 		;
 
@@ -213,7 +229,7 @@ int pfdpoll(nbio_t *nb, int timeout)
 				*prev = cur->next;
 				__fdt_free(cur);
 				continue;
-			} 
+			}
 
 			if (cur->pri != curpri) {
 				prev = &cur->next;

@@ -1,4 +1,20 @@
-/* -*- Mode: ab-c -*- */
+/*
+ * libnbio - Portable wrappers for non-blocking sockets
+ * Copyright (c) 2000-2005 Adam Fritzler <mid@zigamorph.net>, et al
+ *
+ * libnbio is free software; you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License (version 2.1) as published by
+ * the Free Software Foundation.
+ *
+ * libnbio is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -128,7 +144,7 @@ static int streamread_nodelim(nbio_t *nb, nbio_fd_t *fdt)
 
 	if (got < 0)
 		got = 0; /* a non-fatal error occured; zero bytes actually read */
-  
+
 	cur->offset += got;
 
 	if (cur->offset >= cur->len)
@@ -164,7 +180,7 @@ static int streamread_delim(nbio_t *nb, nbio_fd_t *fdt)
 		got += rr;
 
 		for (cd = fdt->delims; cd; cd = cd->next) {
-			if ((cur->offset >= cd->len) && 
+			if ((cur->offset >= cd->len) &&
 				(memcmp(cur->data+cur->offset-cd->len,
 						cd->data, cd->len) == 0)) {
 
@@ -241,7 +257,7 @@ static int streamwrite(nbio_t *nb, nbio_fd_t *fdt)
 
 	if (wrote < 0)
 		wrote = 0; /* a non-fatal error occured; zero bytes actually written */
-  
+
 	cur->offset += wrote;
 
 	if (cur->offset >= cur->len) {
@@ -343,8 +359,8 @@ nbio_fd_t *nbio_addfd(nbio_t *nb, int type, nbio_sockfd_t fd, int pri, nbio_hand
 		return NULL;
 	}
 
-	if ((type != NBIO_FDTYPE_STREAM) && 
-			(type != NBIO_FDTYPE_LISTENER) && 
+	if ((type != NBIO_FDTYPE_STREAM) &&
+			(type != NBIO_FDTYPE_LISTENER) &&
 			(type != NBIO_FDTYPE_DGRAM)) {
 		errno = EINVAL;
 		return NULL;
@@ -500,7 +516,7 @@ void nbio_flushall(nbio_t *nb)
 				dgramwrite(nb, cur);
 		}
 	}
-  
+
 	return;
 }
 
@@ -515,7 +531,7 @@ int nbio_cleanuponly(nbio_t *nb)
 			*prev = cur->next;
 			__fdt_free(cur);
 			continue;
-		} 
+		}
 
 		if ((cur->flags & NBIO_FDT_FLAG_CLOSEONFLUSH) && !cur->txchain)
 			cur->handler(nb, NBIO_EVENT_EOF, cur);
@@ -571,7 +587,7 @@ int __fdt_ready_out(nbio_t *nb, nbio_fd_t *fdt)
 		if (dgramwrite(nb, fdt) < 0)
 			return -1; /* XXX do something better */
 
-	} 
+	}
 
 	return 0;
 }
@@ -736,7 +752,7 @@ int nbio_cleardelim(nbio_fd_t *fdt)
 
 int nbio_setkeepdelim(nbio_fd_t *fdt, int val)
 {
-	
+
 	if (!fdt || (fdt->type != NBIO_FDTYPE_STREAM)) {
 		errno = EINVAL;
 		return -1;

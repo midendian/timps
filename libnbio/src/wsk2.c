@@ -1,4 +1,20 @@
-/* -*- Mode: ab-c -*- */
+/*
+ * libnbio - Portable wrappers for non-blocking sockets
+ * Copyright (c) 2000-2005 Adam Fritzler <mid@zigamorph.net>, et al
+ *
+ * libnbio is free software; you can redistribute it and/or modify it under the
+ * terms of the GNU Lesser General Public License (version 2.1) as published by
+ * the Free Software Foundation.
+ *
+ * libnbio is distributed in the hope that it will be useful, but WITHOUT ANY
+ * WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -125,7 +141,7 @@ static int wsainit(void)
 	if ((WSAStartup(reqver, &wsadata)) != 0)
 		return -1;
 
-	if ((LOBYTE(wsadata.wVersion) != 2) || 
+	if ((LOBYTE(wsadata.wVersion) != 2) ||
 			(HIBYTE(wsadata.wVersion) != 2)) {
 		WSACleanup();
 		return -1;
@@ -164,7 +180,7 @@ void pfdkill(nbio_t *nb)
 
 	free(nbd);
 	nb->intdata = NULL;
-	
+
 	WSACleanup();
 
 	return;
@@ -292,7 +308,7 @@ int pfdpoll(nbio_t *nb, int timeout)
 			*prev = cur->next;
 			__fdt_free(cur);
 			continue;
-		} 
+		}
 
 		if (FD_ISSET(cur->fd, &rfds)) {
 			if (__fdt_ready_in(nb, cur) == -1)
@@ -345,7 +361,7 @@ void fdt_setpollnone(nbio_t *nb, nbio_fd_t *fdt)
 	struct fdtdata *data = (struct fdtdata *)fdt->intdata;
 
 	data->flags &= ~(WANT_READ | WANT_WRITE);
-	
+
 	return;
 }
 
@@ -363,7 +379,7 @@ static int fdt_connect_handler(void *nbv, int event, nbio_fd_t *fdt)
 
 	if ((event != NBIO_EVENT_READ) && (event != NBIO_EVENT_WRITE)) {
 
-		if (ci->handler) 
+		if (ci->handler)
 			error = ci->handler(nb, NBIO_EVENT_CONNECTFAILED, fdt);
 
 		free(ci);
@@ -395,7 +411,7 @@ static int fdt_connect_handler(void *nbv, int event, nbio_fd_t *fdt)
 		return error;
 	}
 
-	if (!ci->handler || 
+	if (!ci->handler ||
 			(ci->handler(nb, NBIO_EVENT_CONNECTED, fdt) == -1)) {
 
 		free(ci);
@@ -420,7 +436,7 @@ static int connectwrap(nbio_sockfd_t fd, const struct sockaddr *addr, int addrle
 
 	ret = connect(fd, (struct sockaddr *)addr, addrlen);
 
-	if (ret == SOCKET_ERROR) 
+	if (ret == SOCKET_ERROR)
 		wsa_seterrno();
 
 	return ret;
