@@ -41,9 +41,6 @@ toscar_flap__sendraw(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *buf,
 	if (!conn)
 		return -1;
 
-	if (conn->type & NAF_CONN_TYPE_CONNECTING)
-		; /* XXX do the buffering here */
-
 	naf_byte_put8(buf, FLAP_MAGIC);
 	naf_byte_put16(buf + 2, conn->nextseqnum);
 	naf_byte_put16(buf + 4, buflen - FLAPHDRLEN);

@@ -94,8 +94,8 @@ toscar_auth_sendauthinforequest(struct nafmodule *mod, struct nafconn *conn, naf
 static int
 toscar_snachandler_0017_0003(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
 {
-	char *sn, *ip;
-	naf_tlv_t *tlvh, *cktlv, *iptlv;
+	char *sn = NULL, *ip = NULL;
+	naf_tlv_t *tlvh, *cktlv, *iptlv = NULL;
 	int ret = HRET_DIGESTED;
 
 	/*
@@ -106,6 +106,13 @@ toscar_snachandler_0017_0003(struct nafmodule *mod, struct nafconn *conn, struct
 	 */
 
 	tlvh = naf_tlv_parse(mod, &snac->payload);
+
+	/* check for login failure */
+	if (naf_tlv_get(mod, tlvh, 0x0004 /* error URL */) ||
+			naf_tlv_get(mod, tlvh, 0x0008 /* error code */)) {
+		ret = HRET_FORWARD;
+		goto out;
+	}
 
 	sn = naf_tlv_getasstring(mod, tlvh, 0x0001); /* canonical SN */
 	cktlv = naf_tlv_get(mod, tlvh, 0x0006);
@@ -259,6 +266,8 @@ toscar_flap_handlesnac(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *bu
 
 #define SNACHDRLEN 10
 	if (buflen < SNACHDRLEN) {
+		if (timps_oscar__debug > 0)
+			dvprintf(mod, "[cid %ld] runt SNAC\n", conn->cid);
 		hret = HRET_ERROR;
 		goto out;
 	}
@@ -274,6 +283,8 @@ toscar_flap_handlesnac(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *bu
 			naf_sbuf_init(mod, &snac.extinfo, buf + SNACHDRLEN + 2, exthdrlen);
 	}
 	if (naf_sbuf_init(mod, &snac.payload, buf + SNACHDRLEN + (exthdrlen ? (2 + exthdrlen) : 0), buflen - SNACHDRLEN - (exthdrlen ? (2 + exthdrlen) : 0)) == -1) {
+		if (timps_oscar__debug > 0)
+			dvprintf(mod, "[cid %ld] failed to allocate sbuf for SNAC parsing\n", conn->cid);
 		hret = HRET_ERROR;
 		goto out;
 	}
@@ -310,6 +321,14 @@ toscar_flap_handlesnac(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *bu
 	}
 
 out:
+	if (timps_oscar__debug > 1) {
+		dvprintf(mod, "[cid %lu] SNAC handler returned %s%s%s (%d)\n",
+				conn->cid,
+				(hret == HRET_ERROR) ? "ERROR" : "",
+				(hret == HRET_DIGESTED) ? "DIGESTED" : "",
+				(hret == HRET_FORWARD) ? "FORWARD" : "",
+				hret);
+	}
 	return hret;
 }
 
