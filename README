@@ -28,6 +28,13 @@ And it will fork and detach from the terminal into the background.  Note that
 the config file path must be absolute, since daemonizing loses the current
 working directory.
 
+To use with AIM, change your client's authorizer to point to the machine
+running timps, and the port that timps-oscar is configured for (see
+[module=conn] section of the config file).  If the machine that timps is
+running on has a different IP than it knows about (because of NAT, etc),
+add an 'extipaddr' line to the [module=conn] section, so that it can tell
+clients to connect back in the right place.
+
 
 === OFF-THE-RECORD MESSAGING ===
 
@@ -61,6 +68,9 @@ Configuration file suitable for development (all debugging on):
 [module=conn]
 listenports=5190/timps-oscar
 debug=10
+; if the clients connect to the server on a different address than the server
+; knows about, set this
+;extipaddr=66.66.66.66
 
 [module=timps]
 debug=10
