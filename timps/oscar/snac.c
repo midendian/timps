@@ -222,7 +222,7 @@ static int
 toscar_snachandler_0017_0003(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
 {
 	char *sn = NULL, *ip = NULL;
-	naf_tlv_t *tlvh, *cktlv, *iptlv = NULL;
+	naf_tlv_t *tlvh, *cktlv = NULL, *iptlv = NULL;
 	int ret = HRET_DIGESTED;
 
 	/*
