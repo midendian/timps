@@ -3,6 +3,7 @@
 
 #include <naf/nafmodule.h>
 #include <naf/naftypes.h>
+#include <naf/naftlv.h>
 #include <naf/nafbufutils.h>
 
 #define HRET_ERROR -1
@@ -19,6 +20,9 @@ struct toscar_snac {
 };
 
 int toscar_flap_handlesnac(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *buf, naf_u16_t buflen);
+
+int toscar_auth_sendauthinforequest(struct nafmodule *mod, struct nafconn *conn, naf_u32_t snacid, naf_tlv_t *tlvh);
+
 
 #endif /* __SNAC_H__ */
 

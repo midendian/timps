@@ -107,6 +107,26 @@ toscar_flap__sendflapversion(struct nafmodule *mod, struct nafconn *conn)
 	return 0; /* sbuf consumed */
 }
 
+static int
+toscar_flap_sendcookie(struct nafmodule *mod, struct nafconn *conn, naf_tlv_t *tlvh)
+{
+	naf_sbuf_t sb;
+
+	if (naf_sbuf_init(mod, &sb, NULL, 0) == -1)
+		return -1;
+
+	toscar_flap_puthdr(&sb, 0x01); /* channel 1 */
+	naf_sbuf_put32(&sb, 0x00000001); /* version 1 */
+	naf_tlv_render(mod, tlvh, &sb);
+
+	if (toscar_flap_sendsbuf_consume(mod, conn, &sb) == -1) {
+		naf_sbuf_free(mod, &sb);
+		return -1;
+	}
+
+	return 0; /* sbuf consumed */
+}
+
 int
 toscar_flap_sendconnclose(struct nafmodule *mod, struct nafconn *conn, naf_u16_t reason, const char *reasonurl)
 {
@@ -149,58 +169,59 @@ toscar_flap_prepareconn(struct nafmodule *mod, struct nafconn *conn)
 	return toscar_flap__reqflap(mod, conn, NULL);
 }
 
-int
-toscar_flap_handlechan1(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *buf, naf_u16_t buflen)
+static int
+toscar_flap_handlechan1__conncomplete(struct nafmodule *mod, struct nafconn *conn)
 {
-	naf_sbuf_t sb;
-	naf_u32_t flapver;
-	naf_tlv_t *tlvh, *cktlv;
-	int ret = HRET_FORWARD;
+	naf_tlv_t *wtlvs = NULL;
+
+	if (naf_conn_tag_remove(mod, conn, "conn.logintlvs", NULL, (void **)&wtlvs) != -1) {
+		naf_u32_t snacid = 0;
+
+		naf_conn_tag_remove(mod, conn, "conn.loginsnacid", NULL, (void **)&snacid);
+
+		toscar_flap__sendflapversion(mod, conn);
+		toscar_auth_sendauthinforequest(mod, conn, snacid, wtlvs);
+
+	} else if (naf_conn_tag_remove(mod, conn, "conn.cookietlvs", NULL, (void **)&wtlvs) != -1) {
+
+		/* this sort of includes the flap version */
+		toscar_flap_sendcookie(mod, conn, wtlvs);
+
+	}
+
+	naf_tlv_free(mod, wtlvs);
+
+	return HRET_DIGESTED;
+}
+
+static int
+toscar_flap_handlechan1__xorlogin(struct nafmodule *mod, struct nafconn *conn, naf_tlv_t **tlvh)
+{
+	/*
+	 * Once upon a time, this is how login started.  libfaim
+	 * refers to this as "XOR login", because of the method's
+	 * choice of 'encryption'.  No modern client attempts this
+	 * anymore.
+	 *
+	 * We don't do this, 'cause it sucks.  It sucks so much that
+	 * we don't want you doing it either.
+	 */
+	return HRET_ERROR;
+}
+
+static int
+toscar_flap_handlechan1__newconn(struct nafmodule *mod, struct nafconn *conn, naf_tlv_t **tlvh)
+{
+	naf_tlv_t *cktlv;
 	char *ip = NULL, *sn = NULL;
 	naf_u16_t servtype = TOSCAR_SERVTYPE_UNKNOWN;
+	int ret = HRET_DIGESTED;
 
-	naf_sbuf_init(mod, &sb, buf, buflen);
-
-	naf_sbuf_advance(&sb, FLAPHDRLEN);
-
-	flapver = naf_sbuf_get32(&sb);
-	if (flapver != 0x00000001) {
-		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] %s sent invalid FLAP version\n", conn->cid, !(conn->type & NAF_CONN_TYPE_CLIENT) ? "server" : "client");
-		return HRET_ERROR;
-	}
-
-	if (!naf_sbuf_bytesremaining(&sb))
-		return HRET_FORWARD; /* XXX do something more? */
-
-	tlvh = naf_tlv_parse(mod, &sb);
-
-	if (!(conn->type & NAF_CONN_TYPE_CLIENT) || conn->endpoint) {
-		/* we don't care about these */
-		ret = HRET_FORWARD;
-		goto out;
-	}
-
-	if (naf_tlv_get(mod, tlvh, 0x0001)) {
-		/*
-		 * Once upon a time, this is how login started.  libfaim
-		 * refers to this as "XOR login", because of the method's
-		 * choice of 'encryption'.  No modern client attempts this
-		 * anymore.
-		 *
-		 * We don't do this, 'cause it sucks.  It sucks so much that
-		 * we don't want you doing it either.
-		 */
-		ret = HRET_ERROR;
-		goto out;
-	}
-
-	if (!(cktlv = naf_tlv_get(mod, tlvh, 0x0006))) {
+	if (!(cktlv = naf_tlv_get(mod, *tlvh, 0x0006))) {
 		/* no cookie = wtf are we doing here? */
 		if (timps_oscar__debug > 0)
 			dvprintf(mod, "[cid %lu] cookie FLAP missing cookie\n", conn->cid);
-		ret = HRET_ERROR;
-		goto out;
+		return HRET_ERROR;
 	}
 
 	if (toscar_ckcache_rem(mod, cktlv->tlv_value, cktlv->tlv_length,
@@ -231,9 +252,57 @@ toscar_flap_handlechan1(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *b
 		sn = NULL;
 	}
 
+	/* need to resend these when connection completes */
+	if (naf_conn_tag_add(mod, conn->endpoint, "conn.cookietlvs", 'V', (void *)*tlvh) == -1) {
+		ret = HRET_ERROR;
+		goto out;
+	}
+	*tlvh = NULL; /* will get freed with tag */
+
 out:
 	naf_free(mod, sn);
 	naf_free(mod, ip);
+	return ret;
+}
+
+static int
+toscar_flap_handlechan1(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *buf, naf_u16_t buflen)
+{
+	naf_sbuf_t sb;
+	naf_u32_t flapver;
+	naf_tlv_t *tlvh;
+	int ret = HRET_FORWARD;
+
+	naf_sbuf_init(mod, &sb, buf, buflen);
+
+	naf_sbuf_advance(&sb, FLAPHDRLEN);
+
+	flapver = naf_sbuf_get32(&sb);
+	if (flapver != 0x00000001) {
+		if (timps_oscar__debug > 0)
+			dvprintf(mod, "[cid %lu] %s sent invalid FLAP version\n", conn->cid, !(conn->type & NAF_CONN_TYPE_CLIENT) ? "server" : "client");
+		return HRET_ERROR;
+	}
+
+	tlvh = naf_tlv_parse(mod, &sb);
+
+	if (FLAPHDR_LEN(buf) == 4) { /* version only */
+		if (conn->type & NAF_CONN_TYPE_SERVER) 
+			ret = toscar_flap_handlechan1__conncomplete(mod, conn);
+		else
+			ret = HRET_DIGESTED; /* wait to see what else they have for us */
+	} else if ((conn->type & NAF_CONN_TYPE_CLIENT) &&
+			naf_tlv_get(mod, tlvh, 0x0001 /* screen name */))
+		ret = toscar_flap_handlechan1__xorlogin(mod, conn, &tlvh);
+	else if ((conn->type & NAF_CONN_TYPE_CLIENT) &&
+			naf_tlv_get(mod, tlvh, 0x0006 /* cookie */))
+		ret = toscar_flap_handlechan1__newconn(mod, conn, &tlvh);
+	else {
+		if (timps_oscar__debug > 0)
+			dvprintf(mod, "[cid %lu] unable to determine purpose of channel 1 packet\n", conn->cid);
+		ret = HRET_ERROR;
+	}
+
 	naf_tlv_free(mod, tlvh);
 	return ret;
 }

@@ -1,10 +1,12 @@
 
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 #include <naf/nafmodule.h>
 #include <naf/nafconfig.h>
 #include <gnr/gnrmsg.h>
+#include <naf/naftlv.h>
 
 #include "oscar.h"
 #include "oscar_internal.h"
@@ -61,7 +63,13 @@ static void
 freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, void *tagdata)
 {
 
-	dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
+	if ((strcmp(tagname, "conn.logintlvs") == 0) ||
+			(strcmp(tagname, "conn.cookietlvs") == 0))
+		naf_tlv_free(mod, (naf_tlv_t *)tagdata);
+	else if (strcmp(tagname, "conn.loginsnacid") == 0)
+		; /* an int */
+	else
+		dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
 
 	return;
 }

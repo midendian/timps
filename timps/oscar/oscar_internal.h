@@ -11,6 +11,7 @@ extern char *timps_oscar__authorizer;
 
 #define TOSCAR_SERVTYPE_UNKNOWN 0x0000
 #define TOSCAR_SERVTYPE_BOS     0x0009
+#define TOSCAR_SERVTYPE_AUTH    0x0017
 
 #endif /* ndef __OSCAR_INTERNAL_H__ */
 

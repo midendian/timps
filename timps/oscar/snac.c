@@ -65,6 +65,24 @@ toscar_auth_sendfail(struct nafmodule *mod, struct nafconn *conn, const char *sn
 	return 0;
 }
 
+int
+toscar_auth_sendauthinforequest(struct nafmodule *mod, struct nafconn *conn, naf_u32_t snacid, naf_tlv_t *tlvh)
+{
+	naf_sbuf_t sb;
+
+	if (toscar_newsnacsb(mod, &sb, 0x0017, 0x0006, 0x0000, snacid) == -1)
+		return -1;
+
+	naf_tlv_render(mod, tlvh, &sb);
+
+
+	if (toscar_flap_sendsbuf_consume(mod, conn, &sb) == -1) {
+		naf_sbuf_free(mod, &sb);
+		return -1;
+	}
+	return 0;
+}
+
 /*
  * 0017/0003 (server->client) Authentication success.
  *
@@ -153,12 +171,13 @@ toscar_snachandler_0017_0006(struct nafmodule *mod, struct nafconn *conn, struct
 {
 	naf_tlv_t *tlvh;
 	char *sn;
-
-	tlvh = naf_tlv_parse(mod, &snac->payload);
-	sn = naf_tlv_getasstring(mod, tlvh, 0x0001);
-	naf_tlv_free(mod, tlvh);
+	int ret = HRET_DIGESTED;
 
 	/* XXX rate limit login attempts like AIM */
+
+	tlvh = naf_tlv_parse(mod, &snac->payload);
+
+	sn = naf_tlv_getasstring(mod, tlvh, 0x0001);
 
 	/*
 	 * Although the registration limits are 3 <= snlen <= 32, the server
@@ -175,7 +194,8 @@ toscar_snachandler_0017_0006(struct nafmodule *mod, struct nafconn *conn, struct
 		toscar_auth_sendfail(mod, conn, sn, 0x0004, "http://www.aol.com?ccode=us&lang=en");
 		toscar_flap_sendconnclose(mod, conn, 0, NULL);
 		naf_conn_schedulekill(conn);
-		return HRET_DIGESTED;
+		ret = HRET_DIGESTED;
+		goto out;
 	}
 
 	if (0 /* XXX !isuserallowed(sn) */) {
@@ -183,17 +203,37 @@ toscar_snachandler_0017_0006(struct nafmodule *mod, struct nafconn *conn, struct
 		toscar_auth_sendfail(mod, conn, sn, 0x0011 /* actually for 'suspended' */, "http://www.aol.com?ccode=us&lang=en");
 		toscar_flap_sendconnclose(mod, conn, 0, NULL);
 		naf_conn_schedulekill(conn);
-		return HRET_DIGESTED;
+		ret = HRET_DIGESTED;
+		goto out;
 	}
 
 	if (!conn->endpoint) {
 		if (naf_conn_startconnect(mod, conn,
 					timps_oscar__authorizer,
-					TIMPS_OSCAR_DEFAULTPORT) == -1)
-			return HRET_ERROR;
+					TIMPS_OSCAR_DEFAULTPORT) == -1) {
+			ret = HRET_ERROR;
+			goto out;
+		}
+
+		conn->servtype = TOSCAR_SERVTYPE_AUTH;
+		conn->endpoint->servtype = TOSCAR_SERVTYPE_AUTH;
+
+		if (naf_conn_tag_add(mod, conn->endpoint, "conn.logintlvs", 'V', (void *)tlvh) == -1) {
+			ret = HRET_ERROR;
+			goto out;
+		}
+		tlvh = NULL; /* now owned by the tag */
+
+		if (naf_conn_tag_add(mod, conn->endpoint, "conn.loginsnacid", 'I', (void *)snac->id) == -1) {
+			ret = HRET_ERROR;
+			goto out;
+		}
 	}
 
-	return HRET_FORWARD;
+out:
+	naf_free(mod, sn);
+	naf_tlv_free(mod, tlvh);
+	return ret;
 }
 
 
