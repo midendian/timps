@@ -3,13 +3,26 @@ See:
    http://www.zigamorph.net/timps/
 
 
+=== REQUIREMENTS ===
+
+For compiling, you'll need the following packages, including the related
+developement files (the -dev package or whatever).
+  - expat
+  - autoconf/automake
+  - libtool
+
+For the nafconsole module, you'll need the following, but you can just ignore
+the compilation errors if you don't want it.
+  - ncurses
+  - readline
+
+For the off-the-record messaging module, you'll need libotr installed.
+
+
 === COMPILING ===
 
 To compile:
   ./gen ; ./configure ; make
-You'll need libtool, automake, and autoconf, of course.  You'll need ncurses
-(including headers) installed to compile the nafconsole plugin, which you'll
-find very helpful in debugging.
 
 
 === RUNNING ===
