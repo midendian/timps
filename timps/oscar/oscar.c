@@ -74,7 +74,7 @@ static int
 toscar_gnroutputfunc(struct nafmodule *mod, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
 {
 
-	if (timps_oscar__debug > 0) {
+	if (timps_oscar__debug > 1) {
 		dvprintf(mod, "toscar_gnroutputfunc: type = %d, to = '%s'[%s](%d), from = '%s'[%s](%d), msg = (%s) '%s'\n",
 				gm->type,
 				gm->srcname, gm->srcnameservice,
