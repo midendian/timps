@@ -16,26 +16,71 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+#ifdef WIN32 
+#include <configwin32.h>
+#endif
 
+#ifdef HAVE_STDIO_H
 #include <stdio.h>
-#include <stdlib.h>
-#include <syslog.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <errno.h>
-#include <netdb.h>
-#include <ctype.h>
-#include <signal.h>
-#include <sys/stat.h>
-#include <string.h>
-#include <time.h>
-#include <sys/resource.h>
+#endif
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_SYSLOG_H
+#include <syslog.h>
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#ifdef HAVE_ERRNO_H
+#include <errno.h>
+#endif
+
+#ifdef HAVE_CTYPE_H
+#include <ctype.h>
+#endif
+
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
+
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
+#ifdef HAVE_PWD_H
 #include <pwd.h> /* getpwnam() */
+#endif
+#ifdef HAVE_GRP_H
 #include <grp.h> /* getgrnam() */
+#endif
 
 #include <naf/naf.h>
 #include <naf/nafmodule.h>
@@ -62,6 +107,7 @@
 
 struct naf_appinfo naf_curappinfo = {NULL, NULL, NULL, NULL};
 
+#ifndef NOSIGNALS
 static void sighandler(int signum)
 {
 
@@ -94,7 +140,9 @@ static void sighandler(int signum)
 
 	return;
 }
+#endif /* ndef NOSIGNALS */
 
+#ifndef NOUNIXDAEMONIZATION
 static void dosetupenv(void)
 {
 
@@ -153,7 +201,9 @@ static void dropgroupperms(const char *newgroup)
 
 	return;
 }
+#endif /* ndef NOUNIXDAEMONIZATION */
 
+#ifndef NOUNIXRLIMITS
 static int setnofilelimit(void)
 {
 	struct rlimit rl;
@@ -197,6 +247,7 @@ static unsigned long getcorelimit(void)
 
 	return val;
 }
+#endif /* ndef NOUNIXRLIMITS */
 
 /* Used for backing out of the init process */
 static int naf_uninit(void)
@@ -223,6 +274,7 @@ int naf_init0(const char *appname, const char *appver, const char *appdesc, cons
 	if (appcopyright && !(naf_curappinfo.nai_copyright = strdup(appcopyright)))
 		return -1;
 
+#ifndef NOSIGNALS
 	/*
 	 * This can happen during SIGHUP's reopening of the log files.
 	 *
@@ -237,6 +289,7 @@ int naf_init0(const char *appname, const char *appver, const char *appdesc, cons
 	 *   http://www.livejournal.com/community/unixhistory/4279.html
 	 */
 	signal(SIGPIPE, SIG_IGN);
+#endif
 
 	/* register resident modules */
 
@@ -288,11 +341,11 @@ int naf_init1(int argc, char **argv)
 		case 'C': {
 			char *var, *val;
 
-			if (!index(optarg, '='))
+			if (!strchr(optarg, '='))
 				goto usage;
 
 			var = optarg;
-			val = index(optarg, '=');
+			val = strchr(optarg, '=');
 			*(val) = '\0';
 			val++;
 
@@ -321,12 +374,16 @@ int naf_init1(int argc, char **argv)
 		}
 	}
 
+#ifndef NOUNIXRLIMITS
 	if (setnofilelimit() == -1)
 		dprintf(NULL, "WARNING: unable to increase file descriptor ulimit\n");
 	setcorelimit();
+#endif
 
+#ifndef NOUNIXDAEMONIZATION
 	if (setupenv)
 		dosetupenv(); /* clear umask, etc */
+#endif
 
 	/* -- this has to be done after setuid() for log file permissions -- */
 	/* initialize the first pass modules */
@@ -345,10 +402,12 @@ int naf_init1(int argc, char **argv)
 	if (droptogroup)
 		naf_config_setparm(CONFIG_PARM_DROPTOGROUP, droptogroup);
 
+#ifndef NOUNIXDAEMONIZATION
 	if (droptogroup)
 		dropgroupperms(droptogroup);
 	if (droptouser)
 		dropuserperms(droptouser);
+#endif
 
 	if (!conffn) {
 		dprintf(NULL, "no config file specified (use -c)\n");
@@ -366,18 +425,22 @@ int naf_init1(int argc, char **argv)
 	/* everything else */
 	naf_module__loadall(NAF_MODULE_PRI_LASTPASS);
 
+#ifndef NOSIGNALS
 	/* install these earlier? */
 	signal(NAF_SIGNAL_SHUTDOWN, sighandler);
 	signal(NAF_SIGNAL_RELOAD, sighandler);
 	signal(NAF_SIGNAL_INFO, sighandler);
 	signal(NAF_SIGNAL_CONFCHANGE, sighandler);
 	signal(SIGCHLD, sighandler);
+#endif
 
+#ifndef NOUNIXDAEMONIZATION
 	if (daemonize && (dodaemonize() == -1)) {
 		dprintf(NULL, "unable to daemonize");
 		naf_uninit();
 		return -1;
 	}
+#endif
 
 	return 0;
 }
@@ -391,9 +454,14 @@ int naf_init_final(void)
 	/* make sure everything is sane. */
 	nafsignal(NULL, NAF_SIGNAL_CONFCHANGE);
 
-	dvprintf(NULL, "started (pid %d)\n", getpid());
+	dprintf(NULL, "started\n");
+#ifndef NOUNIXDAEMONIZATION
+	dvprintf(NULL, "running as pid %d\n", getpid());
+#endif
+#ifndef NOUNIXRLIMITS
 	dvprintf(NULL, "maximum number of open file descriptors: %d\n", getnofilelimit());
 	dvprintf(NULL, "maximum core file size: %d bytes\n", getcorelimit());
+#endif
 
 	return 0;
 }

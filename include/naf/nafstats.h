@@ -19,6 +19,13 @@
 #ifndef __NAFSTATS_H__
 #define __NAFSTATS_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32 
+#include <configwin32.h>
+#endif
+
 #include <naf/naftypes.h>
 
 typedef naf_u32_t naf_longstat_t;

@@ -19,9 +19,22 @@
 #ifndef __NAFMODULE_H__
 #define __NAFMODULE_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
+#ifdef HAVE_STDARG_H
 #include <stdarg.h>
+#endif
+#ifdef HAVE_SIGNAL_H
 #include <signal.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 
 #include <naf/nafconn.h>
 #include <naf/naftypes.h>
@@ -202,7 +215,7 @@ typedef struct naf_childproc_s {
 #define NAF_CHILDPROC_STATUS_RUNNING    1 /* ->pid valid */
 #define NAF_CHILDPROC_STATUS_EXITED     2 /* ->exitinfo valid */
 	int status;
-	pid_t pid;
+	naf_pid_t pid;
 	struct {
 		/* default is to close all fds after fork (including stdin/out/err) */
 #define NAF_CHILDPROC_STREAMFLAG_NONE         0x0000

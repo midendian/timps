@@ -19,6 +19,13 @@
 #ifndef __NAF_H__
 #define __NAF_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
 int naf_init0(const char *appname, const char *appver, const char *appdesc, const char *appcopyright);
 int naf_init1(int argc, char **argv);
 int naf_init_final(void);

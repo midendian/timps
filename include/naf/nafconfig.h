@@ -19,6 +19,13 @@
 #ifndef __NAFCONFIG_H__
 #define __NAFCONFIG_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
 #include <naf/nafmodule.h>
 
 int naf_config_setparm(const char *parm, const char *data);

@@ -16,21 +16,60 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+#ifdef WIN32 
+#include <configwin32.h>
+#endif
 
+#ifdef HAVE_STDIO_H
 #include <stdio.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
+
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+
+#ifdef HAVE_ERRNO_H
 #include <errno.h>
-#include <netdb.h>
+#endif
+
+#ifdef HAVE_CTYPE_H
 #include <ctype.h>
+#endif
+
+#ifdef HAVE_TIME_H
 #include <time.h>
+#endif
 
 #include <naf/nafmodule.h>
 #include <naf/nafrpc.h>
@@ -520,7 +559,7 @@ static int fillendpoints(struct nafconn *conn)
 	return 0;
 }
 
-struct nafconn *naf_conn_addconn(struct nafmodule *mod, int fd, naf_u32_t type)
+struct nafconn *naf_conn_addconn(struct nafmodule *mod, nbio_sockfd_t fd, naf_u32_t type)
 {
 	struct nafconn *newconn;
 	int nbtype;
@@ -744,13 +783,13 @@ char *naf_conn_getlocaladdrstr(struct nafmodule *mod, struct nafconn *conn)
 		return NULL;
 
 	/* This is probably a safe bet, as NAT rarely mangles incoming ports */
-	if (!index(ret, ':'))
+	if (!strchr(ret, ':'))
 		port = (int)ntohs(((struct sockaddr_in *)&conn->localendpoint)->sin_port);
 
 	/*
 	 * If we don't have a port, figure one out...
 	 */
-	if (!index(ret, ':')) { 
+	if (!strchr(ret, ':')) { 
 		char *newip;
 
 		if ((newip = naf_malloc(mod, strlen(ret)+1+strlen("65535")+1))) {
@@ -777,9 +816,9 @@ int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, cons
 		return -1;
 
 	strncpy(newhost, host, sizeof(newhost));
-	if (index(newhost, ':')) {
-		port = atoi(index(newhost, ':')+1);
-		*(index(newhost, ':')) = '\0';
+	if (strchr(newhost, ':')) {
+		port = atoi(strchr(newhost, ':')+1);
+		*(strchr(newhost, ':')) = '\0';
 	}
 
 	if (conndebug)
@@ -797,7 +836,7 @@ int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, cons
 	memset(&sai, 0, sizeof(struct sockaddr_in));
 	memcpy(&sai.sin_addr.s_addr, h->h_addr, 4);
 	sai.sin_family = AF_INET;
-	sai.sin_port = htons(port);
+	sai.sin_port = htons((naf_u16_t)port);
 
 
 	/*
@@ -1171,7 +1210,7 @@ static void cleanlisteners(struct nafmodule *mod)
 
 		portnum = atoi(cur);
 
-		owner = index(cur, '/');
+		owner = strchr(cur, '/');
 		if (owner) {
 			owner++;
 			nconnowner = naf_module_findbyname(mod, owner);
@@ -1187,13 +1226,13 @@ static void cleanlisteners(struct nafmodule *mod)
 			goahead = 0;
 		}
 
-		if (findlistenport(mod, atoi(cur))) {
+		if (findlistenport(mod, (naf_u16_t)atoi(cur))) {
 			dvprintf(mod, "duplicate listener specified on port %d\n", portnum);
 			goahead = 0;
 		}
 
 		if (goahead)
-			nconn = listenestablish(mod, portnum, nconnowner);
+			nconn = listenestablish(mod, (naf_u16_t)portnum, nconnowner);
 
 		if (nconn) {
 			dvprintf(mod, "listening on port %d (for %s)\n",

@@ -16,16 +16,49 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
+#ifdef HAVE_STDIO_H
+#include <stdio.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_ERRNO_H
 #include <errno.h>
+#endif
+
+#ifdef HAVE_STDARG_H
 #include <stdarg.h>
+#endif
+
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+
+#ifdef HAVE_TIME_H
 #include <time.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h> /* for struct timeval */
+#endif
+
+#ifdef HAVE_SYSLOG_H
+#define SUPPORTSYSLOG 1
 #include <syslog.h>
+#endif
 
 #include <naf/naf.h>
 #include <naf/nafmodule.h>
@@ -38,10 +71,12 @@
 /* LOGGING PLUGINS CAN NEVER USE DPRINTF WITH A NON-NULL FIRST ARG!! */
 /* So we can't use the standard ones */
 #undef dprintf
-#undef dvprintf
 #undef dperror
-#define dprintf(p, x) nafevent(NULL, NAF_EVENT_GENERICOUTPUT, "%16.16s: " x, (p)->name)
+#ifndef NOVAMACROS
+#undef dvprintf
 #define dvprintf(p, x, y...) nafevent(NULL, NAF_EVENT_GENERICOUTPUT, "%16.16s: " x, p->name, y)
+#endif
+#define dprintf(p, x) nafevent(NULL, NAF_EVENT_GENERICOUTPUT, x)
 
 static struct nafmodule *ourmodule = NULL;
 
@@ -118,9 +153,13 @@ static int logging_start_wrapper(struct nafmodule *mod)
 	if (initializing)
 		return 0;
 
+#ifdef SUPPORTSYSLOG
 	newsyslog = naf_config_getparmbool(CONFIG_PARM_USESYSLOG);
 	if (newsyslog == -1)
 		newsyslog = USESYSLOG_DEFAULT;
+#else
+	newsyslog = 0;
+#endif
 
 	logfile = naf_config_getmodparmstr(mod, "systemlogfile");
 	outstreamsyslog = newsyslog;
@@ -132,12 +171,13 @@ static int logging_start_wrapper(struct nafmodule *mod)
 		}
 
 	} else {
-
 		if (outstreamsyslog) {
+#ifdef SUPPORTSYSLOG
 
 			openlog(naf_curappinfo.nai_name ? naf_curappinfo.nai_name : "naf", LOG_CONS | LOG_NDELAY | LOG_PID, LOG_USER);
 			outstream = NULL;
 			outfilename = NULL;
+#endif /* def SUPPORTSYSLOG */
 
 		} else {
 
@@ -157,9 +197,13 @@ static int didconfigchange(struct nafmodule *mod)
 	char *logfile;
 	int newsyslog;
 
+#ifdef SUPPORTSYSLOG
 	newsyslog = naf_config_getparmbool(CONFIG_PARM_USESYSLOG);
 	if (newsyslog == -1)
 		newsyslog = USESYSLOG_DEFAULT;
+#else
+	newsyslog = 0;
+#endif
 
 	if (newsyslog != outstreamsyslog)
 		yes = 1;
@@ -218,8 +262,10 @@ static int logging_stop(void)
 		outfilename = NULL;
 	}
 
+#ifdef SUPPORTSYSLOG
 	if (outstreamsyslog)
 		closelog();
+#endif
 
 	return 0;
 }
@@ -267,7 +313,9 @@ static int logprintf(int stream, char *prefix, char *format, ...)
 		vsnprintf(outbuf + strlen(outbuf), sizeof(outbuf) - strlen(outbuf), format, ap);
 		va_end(ap);
 
+#ifdef SUPPORTSYSLOG
 		syslog(LOG_INFO, outbuf);
+#endif
 
 	} else {
 		FILE *f = NULL;
@@ -300,7 +348,9 @@ static int logvprintf(int stream, char *prefix, char *format, va_list ap)
 			snprintf(outbuf, sizeof(outbuf), "%16.16s: ", prefix);
 		vsnprintf(outbuf + strlen(outbuf), sizeof(outbuf) - strlen(outbuf), format, ap);
 
+#if SUPPORTSYSLOG
 		syslog(LOG_INFO, outbuf);
+#endif
 
 	} else {
 		FILE *f = NULL;
@@ -327,17 +377,17 @@ static void signalhandler(struct nafmodule *mod, struct nafmodule *source, int s
 
 	if (signum == NAF_SIGNAL_INFO) {
 
-		dprintf(mod, "Logging module info:\n");
-		dvprintf(mod, "  Output file: %s\n", outfilename ? outfilename : "stderr");
+		dprintf(NULL, "Logging module info:\n");
+		dvprintf(NULL, "  Output file: %s\n", outfilename ? outfilename : "stderr");
 
 	} else if (signum == NAF_SIGNAL_RELOAD) {
 
-		dprintf(mod, "reopening logfile...\n");
+		dprintf(NULL, "reopening logfile...\n");
 		logging_restart(mod);
 
 	} else if (signum == NAF_SIGNAL_SHUTDOWN) {
 
-		dprintf(mod, "deferring shutdown of logging module...\n");
+		dprintf(NULL, "deferring shutdown of logging module...\n");
 
 	} else if (signum == NAF_SIGNAL_CONFCHANGE) {
 

@@ -19,6 +19,13 @@
 #ifndef __NAFRPC_H__
 #define __NAFRPC_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
 #include <naf/naftypes.h>
 
 #define NAF_RPC_ARGTYPE_SCALAR  0x0000

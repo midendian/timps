@@ -24,15 +24,48 @@
  * XXX needs lots of security auditing...
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
+#ifndef HAVE_EXPAT_H
+#define NOXML 1
+#endif
+
+#ifndef NOXML
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
+#ifdef HAVE_STDIO_H
+#include <stdio.h> /* snprintf -- why is it in stdio.h? */
+#endif
+
 #include <naf/nafmodule.h>
 #include <naf/nafrpc.h>
 #include <naf/nafhttpd.h>
 
 #include <libmx.h> /* Sadly, the entire point is XML. */
 
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif
+
+#ifdef HAVE_STDIO_H
 #include <stdio.h> /* snprintf -- why is it in stdio.h? */
+#endif
 
 #include "module.h" /* for naf_module__registerresident() only */
 
@@ -961,8 +994,14 @@ static int modfirst(struct nafmodule *mod)
 	return 0;
 }
 
+#endif /* ndef NOXML */
+
 int naf_httpd__register(void)
 {
+#ifdef NOXML
+	return 0;
+#else
 	return naf_module__registerresident("httpd", modfirst, NAF_MODULE_PRI_THIRDPASS);
+#endif
 }
 

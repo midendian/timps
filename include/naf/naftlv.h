@@ -19,6 +19,13 @@
 #ifndef __NAFTLV_H__
 #define __NAFTLV_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef HAVE_CONFIGW32_H
+#include <configwin32.h>
+#endif
+
 #include <naf/nafmodule.h>
 #include <naf/naftypes.h>
 #include <naf/nafbufutils.h>

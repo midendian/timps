@@ -19,6 +19,13 @@
 #ifndef __NAFTYPES_H__
 #define __NAFTYPES_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef HAVE_CONFIGW32_H
+#include <configwin32.h>
+#endif
+
 typedef unsigned char naf_u8_t;
 typedef unsigned short naf_u16_t;
 typedef unsigned long naf_u32_t;
@@ -28,6 +35,12 @@ typedef short naf_s16_t;
 typedef long naf_s32_t;
 
 typedef naf_u32_t naf_event_t;
+
+#ifdef WIN32
+typedef HANDLE naf_pid_t;
+#else
+typedef pid_t naf_pid_t;
+#endif
 
 #endif /* __NAFTYPES_H__ */
 

@@ -19,6 +19,13 @@
 #ifndef __NAFHTTPD_H__
 #define __NAFHTTPD_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
 #include <naf/naftypes.h>
 #include <naf/nafmodule.h>
 #include <naf/nafconn.h>

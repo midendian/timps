@@ -19,6 +19,17 @@
 #ifndef __NAF_EVENTS_H__
 #define __NAF_EVENTS_H__
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
 #include <naf/naftypes.h>
 #include <naf/nafmodule.h>
 
@@ -33,10 +44,15 @@
 /*
  * Throw an event.
  */
+int nafeventv(struct nafmodule *source, naf_event_t event, va_list inap);
 int nafevent(struct nafmodule *mod, naf_event_t event, ...);
 
 #define dprintf(p, x) nafevent(p, NAF_EVENT_GENERICOUTPUT, x)
+#ifdef NOVAMACROS
+int dvprintf(struct nafmodule *mod, ...);
+#else
 #define dvprintf(p, x, y...) nafevent(p, NAF_EVENT_GENERICOUTPUT, x, y)
+#endif
 #define dperror(p, x) nafevent(p, NAF_EVENT_DEBUGOUTPUT, "%s: %s\n", x, strerror(errno))
 
 #endif /* __NAF_EVENTS_H__ */

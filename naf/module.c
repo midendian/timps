@@ -16,13 +16,36 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdarg.h>
+#ifdef HAVE_CONFIG_H
 #include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
+#ifdef HAVE_STDIO_H
+#include <stdio.h>
+#endif
+
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
+
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
+#endif
+
+#ifdef HAVE_TIME_H
 #include <time.h>
+#endif
 
 #include <naf/nafmodule.h>
 #include <naf/nafconn.h>
@@ -288,12 +311,11 @@ struct nafmodule *naf_module_findbyname(struct nafmodule *caller, const char *na
 	return NULL;
 }
 
-int nafevent(struct nafmodule *source, naf_event_t event, ...)
+int nafeventv(struct nafmodule *source, naf_event_t event, va_list inap)
 {
 	struct modlist_item *cur;
 
 	for (cur = modlist; cur; cur = cur->next) {
-		va_list ap;
 
 		if (&cur->module == source)
 			continue;
@@ -302,13 +324,40 @@ int nafevent(struct nafmodule *source, naf_event_t event, ...)
 			continue;
 
 		if (cur->module.event) {
-			va_start(ap, event);
+			va_list ap;
+
+			va_copy(ap, inap);
 			cur->module.event(&cur->module, source, event, ap);
+			va_end(ap);
 		}
 	}
  
 	return 0;
 }
+
+int nafevent(struct nafmodule *source, naf_event_t event, ...)
+{
+	va_list ap;
+
+	va_start(ap, event);
+	nafeventv(source, event, ap);
+	va_end(ap);
+
+	return 0;
+}
+
+#ifdef NOVAMACROS
+int dvprintf(struct nafmodule *mod, ...)
+{
+	va_list ap;
+
+	va_start(ap, mod);
+	nafeventv(mod, NAF_EVENT_GENERICOUTPUT, ap);
+	va_end(ap);
+
+	return 0;
+}
+#endif /* def NOVAMACROS */
 
 /* 
  * Broadcast a signal to all modules.
