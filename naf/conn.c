@@ -300,6 +300,7 @@ int naf_conn_schedulekill(struct nafconn *conn)
 
 static void updaterawmode(struct nafconn *conn); /* later */
 
+/* XXX this should be in libnbio somewhere... */
 static int getconnection(struct nafconn *listenconn)
 {
 	struct sockaddr sa;
@@ -309,20 +310,43 @@ static int getconnection(struct nafconn *listenconn)
 
 	if ((clientfd = accept(listenconn->fdt->fd, &sa, &salen)) == -1) {
 
-		if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+#ifdef EAGAIN
+		if (errno == EAGAIN)
 			return 0;
+#endif
+#ifdef EWOULDBLOCK /* rare, but some stacks have it... */
+		if (errno == EWOULDBLOCK)
+			return 0;
+#endif
 
 		/*
-		 * On Linux, accept() returns pending network errors. Ignore
-		 * them.
+		 * On Linux, accept() returns pending network errors. I hate
+		 * that.  Ignore them.
+		 *
+		 * Not all sockets implementations have all these; but we
+		 * assume they all have host/net unreachable, since those
+		 * are rather fundamental -- though if their accept() doesn't
+		 * return these errors, it doesn't matter.
 		 */
-		if ((errno == ENETDOWN) || 
+		if ((errno == EHOSTUNREACH) || 
+#ifdef EPROTO
 				(errno == EPROTO) ||
-				(errno == ENOPROTOOPT) || 
+#endif
+#ifdef ENOPROTOOPT
+				(errno == ENOPROTOOPT) ||
+#endif
+#ifdef EHOSTDOWN
 				(errno == EHOSTDOWN) ||
+#endif
+#ifdef ENONET
 				(errno == ENONET) || 
-				(errno == EHOSTUNREACH) ||
-				(errno == EOPNOTSUPP) || 
+#endif
+#ifdef ENETDOWN
+				(errno == ENETDOWN) ||
+#endif
+#ifdef EOPNOTSUPP
+				(errno == EOPNOTSUPP) ||
+#endif
 				(errno == ENETUNREACH)) {
 			return 0;
 		}
@@ -838,7 +862,10 @@ int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, cons
 		inprogress = NAF_CONN_TYPE_CONNECTING;
 	}
 
-	if (!(localconn->endpoint = naf_conn_addconn(NULL, s, (localconn->type ^ NAF_CONN_TYPE_CLIENT)|NAF_CONN_TYPE_SERVER|inprogress/*inherit client type*/))) {
+	if (!(localconn->endpoint = naf_conn_addconn(NULL, s,
+					(localconn->type ^ NAF_CONN_TYPE_CLIENT) | 
+					NAF_CONN_TYPE_SERVER | 
+					inprogress/*inherit client type*/))) {
 		close(s);
 		return -1;
 	}

@@ -40,6 +40,14 @@
 #define CHATTYFLMP
 
 
+/* seems to be some disagreement here about which is the shorthand... */
+#if !defined(MAP_ANONYMOUS)
+#define MAP_ANONYMOUS MAP_ANON
+#elif !defined(MAP_ANON)
+#define MAP_ANON MAP_ANONYMOUS
+#endif
+
+
 struct memory_stats {
 	naf_u32_t regions;
 	naf_u32_t current; 
