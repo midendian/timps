@@ -68,6 +68,8 @@ freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, 
 		naf_tlv_free(mod, (naf_tlv_t *)tagdata);
 	else if (strcmp(tagname, "conn.loginsnacid") == 0)
 		; /* an int */
+	else if (strcmp(tagname, "conn.screenname") == 0)
+		naf_free(mod, tagdata); /* string */
 	else
 		dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
 
