@@ -34,6 +34,7 @@
 #include <naf/nafmodule.h>
 #include <naf/nafconfig.h>
 #include <gnr/gnrmsg.h>
+#include <gnr/gnrnode.h>
 #include <gnr/gnrevents.h>
 
 
@@ -334,7 +335,7 @@ modshutdown(struct nafmodule *mod)
 	}
 
 	gnr_event_unregister(mod, tlogging_nodeeventhandler);
-gnr_msg_remmsghandler(mod, GNR_MSG_MSGHANDLER_STAGE_POSTROUTING, tlogging_msglogger);
+	gnr_msg_remmsghandler(mod, GNR_MSG_MSGHANDLER_STAGE_POSTROUTING, tlogging_msglogger);
 	gnr_msg_unregister(mod);
 
 	timps_logging__module = NULL;
