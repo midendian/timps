@@ -557,6 +557,17 @@ totr_gnroutputfunc(struct nafmodule *mod, struct gnrmsg *gm, struct gnrmsg_handl
 
 	if (timps_otr__botnode && (gmhi->destnode == timps_otr__botnode)) {
 
+		/*
+		 * XXX parse commands; see if part of open dialog (don't
+		 * forget to strip html!)
+		 *
+		 * Need commands for:
+		 *   - looking at active sessions
+		 *   - examining fingerprint store
+		 *   - forcing an OTR session closed
+		 *   - forcing an OTR key refresh
+		 * Also need dialog for things like accepting keys.
+		 */
 		totrbot_sendmsg(mod, gmhi->srcnode->name, gmhi->srcnode->service, "<b>Hello!</b>");
 
 	} else {
