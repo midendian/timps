@@ -20,6 +20,7 @@
 #include <pwd.h> /* getpwnam() */
 #include <grp.h> /* getgrnam() */
 
+#include <naf/naf.h>
 #include <naf/nafmodule.h>
 #include <naf/nafconn.h>
 #include <naf/nafevents.h>
@@ -42,12 +43,7 @@
 #define NAF_NOFILE_RLIMIT_DEFAULT 65536
 #define NAF_CORE_RLIMIT_DEFAULT 1000000
 
-static struct {
-	char *cai_name;
-	char *cai_version;
-	char *cai_description;
-	char *cai_copyright;
-} naf_curappinfo = {NULL, NULL, NULL, NULL};
+struct naf_appinfo naf_curappinfo = {NULL, NULL, NULL, NULL};
 
 static void sighandler(int signum)
 {
@@ -201,13 +197,13 @@ static int naf_uninit(void)
 int naf_init0(const char *appname, const char *appver, const char *appdesc, const char *appcopyright)
 {
 
-	if (appname && !(naf_curappinfo.cai_name = strdup(appname)))
+	if (appname && !(naf_curappinfo.nai_name = strdup(appname)))
 		return -1;
-	if (appver && !(naf_curappinfo.cai_version = strdup(appver)))
+	if (appver && !(naf_curappinfo.nai_version = strdup(appver)))
 		return -1;
-	if (appdesc && !(naf_curappinfo.cai_description = strdup(appdesc)))
+	if (appdesc && !(naf_curappinfo.nai_description = strdup(appdesc)))
 		return -1;
-	if (appcopyright && !(naf_curappinfo.cai_copyright = strdup(appcopyright)))
+	if (appcopyright && !(naf_curappinfo.nai_copyright = strdup(appcopyright)))
 		return -1;
 
 	/*
@@ -296,8 +292,8 @@ int naf_init1(int argc, char **argv)
 		usage:
 		case 'h':
 		default:
-			printf("%s %s -- %s\n", naf_curappinfo.cai_name, naf_curappinfo.cai_version, naf_curappinfo.cai_description);
-			printf("  %s\n", naf_curappinfo.cai_copyright);
+			printf("%s %s -- %s\n", naf_curappinfo.nai_name, naf_curappinfo.nai_version, naf_curappinfo.nai_description);
+			printf("  %s\n", naf_curappinfo.nai_copyright);
 			printf("\nUsage:\n");
 			printf("\t%s [-h] [-d] [-C var=value] [-m module.so] [-M module.so] [-c file.conf] [-S] [-u username] [-u groupname]\n", argv[0]);
 			printf("\n");

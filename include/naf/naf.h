@@ -7,5 +7,13 @@ int naf_init1(int argc, char **argv);
 int naf_init_final(void);
 int naf_main(void);
 
+struct naf_appinfo {
+	char *nai_name;
+	char *nai_version;
+	char *nai_description;
+	char *nai_copyright;
+};
+extern struct naf_appinfo naf_curappinfo;
+
 #endif /* ndef __NAF_H__ */
 

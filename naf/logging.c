@@ -10,6 +10,7 @@
 #include <sys/time.h> /* for struct timeval */
 #include <syslog.h>
 
+#include <naf/naf.h>
 #include <naf/nafmodule.h>
 #include <naf/nafevents.h>
 #include <naf/nafconfig.h>
@@ -117,7 +118,7 @@ static int logging_start_wrapper(struct nafmodule *mod)
 
 		if (outstreamsyslog) {
 
-			openlog(PACKAGE, LOG_CONS | LOG_NDELAY | LOG_PID, LOG_USER);
+			openlog(naf_curappinfo.nai_name ? naf_curappinfo.nai_name : "naf", LOG_CONS | LOG_NDELAY | LOG_PID, LOG_USER);
 			outstream = NULL;
 			outfilename = NULL;
 
@@ -259,9 +260,9 @@ static int logprintf(int stream, char *prefix, char *format, ...)
 			return 0;
 
 		if (prefix)
-			fprintf(f, "%s  %s: %16.16s: ", myctime(), PACKAGE, prefix);
+			fprintf(f, "%s  %s: %16.16s: ", myctime(), naf_curappinfo.nai_name, prefix);
 		else
-			fprintf(f, "%s  %s: ", myctime(), PACKAGE);
+			fprintf(f, "%s  %s: ", myctime(), naf_curappinfo.nai_name);
 		va_start(ap, format);
 		vfprintf(f, format, ap);
 		va_end(ap);
@@ -292,9 +293,9 @@ static int logvprintf(int stream, char *prefix, char *format, va_list ap)
 			return 0;
 
 		if (prefix)
-			fprintf(f, "%s  %s: %16.16s: ", myctime(), PACKAGE, prefix);
+			fprintf(f, "%s  %s: %16.16s: ", myctime(), naf_curappinfo.nai_name, prefix);
 		else
-			fprintf(f, "%s  %s: ", myctime(), PACKAGE);
+			fprintf(f, "%s  %s: ", myctime(), naf_curappinfo.nai_name);
 		vfprintf(f, format, ap);
 
 		fflush(f);
