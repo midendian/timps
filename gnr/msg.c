@@ -244,11 +244,12 @@ int gnr_msg_route(struct nafmodule *srcmod, struct gnrmsg *gm)
 	gmhi.destnode = gnr_node_findbyname(gm->destname, gm->destnameservice);
 
 	if (gnr__debug > 0) {
-		dvprintf(gnr__module, "gnr_msg_route: from %s, %s[%s] -> %s[%s], msgstring = '%s', msgflags = %08lx, srconn = %d\n",
+		dvprintf(gnr__module, "gnr_msg_route: from %s, %s[%s] -> %s[%s], msgtext = (%s) '%s', msgflags = %08lx, srconn = %d\n",
 				srcmod,
 				gm->srcname, gm->srcnameservice,
 				gm->destname, gm->destnameservice,
-				gm->msgstring, gm->msgflags,
+				gm->msgtexttype ? gm->msgtexttype : "type not specified",
+				gm->msgtext, gm->msgflags,
 				gm->srcconn ? gm->srcconn->cid : -1);
 	}
 

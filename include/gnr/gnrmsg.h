@@ -68,10 +68,11 @@ struct gnrmsg {
 	gnrmsg_msgbuf_freefunc_t msgbuf_freefunc;
 
 	/*
-	 * msgstring must be a human-readable representation of the message
-	 * being routed.
+	 * msgtext should be a human-readable representation of the message
+	 * being routed.  If msgtexttype is not set, text/plain is assumed.
  	 */
-	char *msgstring;
+	char *msgtexttype;
+	char *msgtext;
 
 	gnrmsg_msgflag_t msgflags;
 	gnrmsg_routeflag_t routeflags;

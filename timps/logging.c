@@ -35,7 +35,7 @@ tlogging_msglogger(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct g
 	else if (gm->routeflags & GNR_MSG_ROUTEFLAG_DROPPED) route = routes[5];
 	else if (gm->routeflags & GNR_MSG_ROUTEFLAG_DELAYED) route = routes[6];
 
-	dvprintf(mod, "MESSAGE: %s: %s[%s][%s] -> %s[%s][%s] [%s by %s]: %s\n",
+	dvprintf(mod, "MESSAGE: %s: %s[%s][%s] -> %s[%s][%s] [%s by %s]: [%s] %s\n",
 			typename,
 
 			gmhi->srcnode ? gmhi->srcnode->name : gm->srcname,
@@ -48,7 +48,8 @@ tlogging_msglogger(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct g
 
 			route, gmhi->targetmod ? gmhi->targetmod->name : "unknown",
 
-			gm->msgstring);
+			gm->msgtexttype ? gm->msgtexttype : "text/plain",
+			gm->msgtext);
 
 	/* XXX admin logs, personal logs, etc */
 
