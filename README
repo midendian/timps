@@ -34,6 +34,12 @@ debug=10
 [module=timps]
 debug=10
 
+[module=timps-logging]
+; prefixed to filenames below
+logfilepath=/home/mid/tmp/timps
+; admin log gets all messages and user (dis)connects
+adminlogfile=timps-message.log
+
 [module=timps-oscar]
 debug=10
 ; if you're using aimdlite for testing
@@ -42,8 +48,8 @@ debug=10
 
 [module=logging]
 ; this is the low-level logging module (in NAF) -- it does not see IMs
-logfilepath=/home/mid/tmp/timpsdevlogs
-systemlogfile=timpssystem.log
+logfilepath=/home/mid/tmp/timps
+systemlogfile=timps-system.log
 
 [module=gnr]
 debug=10

@@ -1,14 +1,45 @@
 
+/*
+ * Should have four types of logs:
+ *   - system log [this is handled by naf]
+ *   - admin log (contains all messages, session start/end, node up/down)
+ *   - per-user log (seperate log file for each user)
+ *   - per-session log (seperate log file for each session) (for emailing, etc)
+ *
+ */
+
+#include <stdio.h>
+#include <time.h>
+#include <sys/time.h>
+#include <string.h>
+
 #include <naf/nafmodule.h>
+#include <naf/nafconfig.h>
 #include <gnr/gnrmsg.h>
 #include <gnr/gnrevents.h>
 
 
-struct nafmodule *timps_logging__module = NULL;
+static struct nafmodule *timps_logging__module = NULL;
+static char *timps_logging__adminlogfn = NULL;
+static FILE *timps_logging__adminlogstream = NULL;
 
 
-static int
-tlogging_msglogger(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
+static char *myctime(void)
+{
+	static char retbuf[64];
+	struct tm *lt;
+	struct timeval tv;
+	struct timezone tz;
+
+	gettimeofday(&tv, &tz);
+	lt = localtime((time_t *)&tv.tv_sec);
+	strftime(retbuf, 64, "%a %b %e %H:%M:%S %Z %Y", lt);
+
+	return retbuf;
+}
+
+
+static void tlogging__logmsg_admin(struct nafmodule *mod, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
 {
 	static const char *typenames[] = {
 		"unknown", "message", "group-invite", "group-message",
@@ -35,7 +66,10 @@ tlogging_msglogger(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct g
 	else if (gm->routeflags & GNR_MSG_ROUTEFLAG_DROPPED) route = routes[5];
 	else if (gm->routeflags & GNR_MSG_ROUTEFLAG_DELAYED) route = routes[6];
 
-	dvprintf(mod, "MESSAGE: %s: %s[%s][%s] -> %s[%s][%s] [%s by %s]: [%s] %s\n",
+	fprintf(timps_logging__adminlogstream,
+			"%s  %16.16s:  %s[%s][%s] -> %s[%s][%s] [%s by %s]: [%s] %s\n",
+			myctime(),
+
 			typename,
 
 			gmhi->srcnode ? gmhi->srcnode->name : gm->srcname,
@@ -50,10 +84,62 @@ tlogging_msglogger(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct g
 
 			gm->msgtexttype ? gm->msgtexttype : "text/plain",
 			gm->msgtext);
+	fflush(timps_logging__adminlogstream);
 
-	/* XXX admin logs, personal logs, etc */
+	return;
+}
+
+static int
+tlogging_msglogger(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
+{
+
+	if (timps_logging__adminlogstream)
+		tlogging__logmsg_admin(mod, gm, gmhi);
+
+	/* XXX per-user log */
+	/* XXX per-session log */
 
 	return 0;
+}
+
+static void tlogging__lognodeevent_admin(struct nafmodule *mod, struct gnrnode *node, gnr_event_t event, naf_u32_t reason)
+{
+	static const char *eventnames[] = {
+		"unknown event", "user connected", "user disconnected",
+		"user flag change"
+	};
+	const char *eventname = eventnames[0];
+	static const char *offlinereasons[] = {
+		"unknown reason", "remote user timeout", "disconnected"
+	};
+	const char *rstr = NULL;
+
+	if (event == GNR_EVENT_NODEUP) eventname = eventnames[1];
+	else if (event == GNR_EVENT_NODEDOWN) eventname = eventnames[2];
+	else if (event == GNR_EVENT_NODEFLAGCHANGE) eventname = eventnames[3];
+
+	if (event == GNR_EVENT_NODEDOWN) {
+		if (reason == GNR_NODE_OFFLINE_REASON_UNKNOWN)
+			rstr = offlinereasons[0];
+		else if (reason == GNR_NODE_OFFLINE_REASON_TIMEOUT)
+			rstr = offlinereasons[1];
+		else if (reason == GNR_NODE_OFFLINE_REASON_DISCONNECTED)
+			rstr = offlinereasons[2];
+	}
+
+	fprintf(timps_logging__adminlogstream,
+			"%s  %s:  %s[%s][%s][%s%s%s] %s%s%s\n",
+			myctime(),
+			eventname,
+			node->name, node->service,
+			node->ownermod ? node->ownermod->name : "unknown",
+			(node->metric == GNR_NODE_METRIC_LOCAL) ? "local" : "",
+			GNR_NODE_METRIC_ISPEERED(node->metric) ? "peer" : "",
+			(node->metric == GNR_NODE_METRIC_MAX) ? "remote" : "",
+			rstr ? "(" : "", rstr ? rstr : "", rstr ? ")" : "");
+	fflush(timps_logging__adminlogstream);
+
+	return;
 }
 
 static void
@@ -63,31 +149,14 @@ tlogging_nodeeventhandler(struct nafmodule *mod, struct gnr_event_info *gei)
 
 	einc = (struct gnr_event_ei_nodechange *)gei->gei_extinfo;
 
-	if (gei->gei_event == GNR_EVENT_NODEUP) {
-
-		dvprintf(mod, "user online: %s[%s][%s][%s%s%s]\n",
-				gei->gei_node->name,
-				gei->gei_node->service,
-				gei->gei_node->ownermod ? gei->gei_node->ownermod->name : "unknown",
-				(gei->gei_node->metric == GNR_NODE_METRIC_LOCAL) ? "local" : "",
-				GNR_NODE_METRIC_ISPEERED(gei->gei_node->metric) ? "peer" : "",
-				(gei->gei_node->metric == GNR_NODE_METRIC_MAX) ? "remote" : "");
-
-	} else if (gei->gei_event == GNR_EVENT_NODEDOWN) {
-
-		dvprintf(mod, "user offline: %s[%s][%s][%s%s%s] -- %s%s%s\n",
-				gei->gei_node->name,
-				gei->gei_node->service,
-				gei->gei_node->ownermod ? gei->gei_node->ownermod->name : "unknown",
-				(gei->gei_node->metric == GNR_NODE_METRIC_LOCAL) ? "local" : "",
-				GNR_NODE_METRIC_ISPEERED(gei->gei_node->metric) ? "peer" : "",
-				(gei->gei_node->metric == GNR_NODE_METRIC_MAX) ? "remote" : "",
-				(einc && (einc->reason == GNR_NODE_OFFLINE_REASON_TIMEOUT)) ? "timed out" : "",
-				(einc && (einc->reason == GNR_NODE_OFFLINE_REASON_DISCONNECTED)) ? "disconnected" : "",
-				(!einc || ((einc->reason != GNR_NODE_OFFLINE_REASON_TIMEOUT) && (einc->reason != GNR_NODE_OFFLINE_REASON_DISCONNECTED))) ? "unknown reason" : "");
+	if (timps_logging__adminlogstream) {
+		tlogging__lognodeevent_admin(mod, gei->gei_node, gei->gei_event, 
+				einc ? einc->reason :
+					GNR_NODE_OFFLINE_REASON_UNKNOWN);
 	}
 
-	/* XXX admin log, personal logs, etc */
+	/* XXX per-user log */
+	/* XXX per-session log */
 
 	return;
 }
@@ -114,6 +183,13 @@ static int
 modshutdown(struct nafmodule *mod)
 {
 
+	if (timps_logging__adminlogstream) {
+		fprintf(timps_logging__adminlogstream,
+				"%s  admin logging stopped (shutting down)\n",
+				myctime());
+		fflush(timps_logging__adminlogstream);
+	}
+
 	gnr_event_unregister(mod, tlogging_nodeeventhandler);
 gnr_msg_remmsghandler(mod, GNR_MSG_MSGHANDLER_STAGE_POSTROUTING, tlogging_msglogger);
 	gnr_msg_unregister(mod);
@@ -128,8 +204,50 @@ signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
 {
 
 	if (signum == NAF_SIGNAL_CONFCHANGE) {
-#if 0 /* XXX check for log file changes */
-#endif
+		char *npath, *nadminfn, *nadminfn_full = NULL;
+
+		npath = naf_config_getmodparmstr(mod, "logfilepath");
+		if ((nadminfn = naf_config_getmodparmstr(mod, "adminlogfile"))) {
+			int len;
+
+			len = (npath ? strlen(npath) : 0) + 1 + strlen(nadminfn) + 1;
+			if ((nadminfn_full = naf_malloc(mod, len))) {
+				snprintf(nadminfn_full, len, "%s/%s",
+						npath ? npath : "",
+						nadminfn);
+			}
+		}
+
+		if ((!!timps_logging__adminlogfn != !!nadminfn_full) ||
+				(nadminfn_full && timps_logging__adminlogfn && (strcmp(timps_logging__adminlogfn, nadminfn_full) != 0))) {
+			/* kill the old one */
+			if (timps_logging__adminlogstream) {
+				fprintf(timps_logging__adminlogstream,
+						"%s  admin logging stopped\n",
+						myctime());
+				fflush(timps_logging__adminlogstream);
+				fclose(timps_logging__adminlogstream);
+				timps_logging__adminlogstream = NULL;
+			}
+			naf_free(mod, timps_logging__adminlogfn);
+			timps_logging__adminlogfn = NULL;
+		}
+
+		if (nadminfn_full && !timps_logging__adminlogstream) {
+			FILE *f;
+
+			if ((f = fopen(nadminfn_full, "a+"))) {
+				timps_logging__adminlogfn = nadminfn_full;
+				nadminfn_full = NULL;
+				timps_logging__adminlogstream = f;
+				f = NULL;
+
+				fprintf(timps_logging__adminlogstream,
+						"%s  admin logging started\n",
+						myctime());
+				fflush(timps_logging__adminlogstream);
+			}
+		}
 	}
 
 	return;
