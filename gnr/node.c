@@ -51,7 +51,7 @@ int gnr_node_tag_fetch(struct nafmodule *mod, struct gnrnode *gn, const char *na
 	if (!gn)
 		return -1;
 
-	return naf_tag_fetch(&gn->taglistv, (void *)gn, name, typeret, dataret);
+	return naf_tag_fetch(&gn->taglistv, (void *)mod, name, typeret, dataret);
 }
 
 
