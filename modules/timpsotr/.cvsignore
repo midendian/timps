@@ -2,4 +2,6 @@ Makefile.in
 Makefile
 .deps
 .libs
+timpsotr.lo
+libtimpsotr.la
 
