@@ -262,6 +262,15 @@ int naf_sbuf_putraw(naf_sbuf_t *sbuf, const naf_u8_t *inbuf, int inbuflen)
 	return inbuflen;
 }
 
+int naf_sbuf_putstr(naf_sbuf_t *sbuf, const char *instr)
+{
+
+	if (!sbuf || !instr)
+		return 0;
+
+	return naf_sbuf_putraw(sbuf, (const naf_u8_t *)instr, strlen(instr));
+}
+
 int naf_sbuf_cmp(naf_sbuf_t *sbuf, const naf_u8_t *cmpbuf, int cmpbuflen)
 {
 

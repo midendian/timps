@@ -68,6 +68,7 @@ int naf_sbuf_put8(naf_sbuf_t *sbuf, naf_u8_t v);
 int naf_sbuf_put16(naf_sbuf_t *sbuf, naf_u16_t v);
 int naf_sbuf_put32(naf_sbuf_t *sbuf, naf_u32_t v);
 int naf_sbuf_putraw(naf_sbuf_t *sbuf, const naf_u8_t *inbuf, int inbuflen);
+int naf_sbuf_putstr(naf_sbuf_t *sbuf, const char *instr);
 
 int naf_sbuf_cmp(naf_sbuf_t *sbuf, const naf_u8_t *cmpbuf, int cmpbuflen);
 

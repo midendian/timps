@@ -48,11 +48,15 @@ int naf_tag_cloneall(void **desttaglistv, void **srctaglistv)
 {
 	naf_tag_t *cur;
 
+	if (!desttaglistv || !srctaglistv)
+		return -1;
+
 	for (cur = *((naf_tag_t **)srctaglistv); cur; cur = cur->next) {
 
 		if (cur->type == 'S') {
 			char *newstr;
 
+			/* XXX this is very bad if the owner is preserved (naf_malloc issues) */
 			if ((newstr = strdup((char *)cur->data))) {
 				if (naf_tag_add(desttaglistv, cur->owner, cur->name, cur->type, (void *)newstr) == -1)
 					free(newstr);
@@ -153,6 +157,9 @@ void naf_tag_iter(void **taglistv, struct nafmodule *mod, int (*uf)(struct nafmo
 void naf_tag_freelist(void **taglistv, void *user)
 {
 	naf_tag_t *tag;
+
+	if (!taglistv)
+		return;
 
 	for (tag = *((naf_tag_t **)taglistv); tag; ) {
 		naf_tag_t *tmp;

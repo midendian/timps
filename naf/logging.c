@@ -78,7 +78,7 @@ static int logging_start(struct nafmodule *mod, char *filename, char **fnret, FI
 				*streamret = NULL;
 
 				if (*fnret)
-					free(*fnret);
+					naf_free(ourmodule, *fnret);
 				*fnret = NULL;
 
 				return -1;
@@ -196,7 +196,7 @@ static int logging_stop(void)
 	outstream = NULL;
 
 	if (outfilename) {
-		free(outfilename);
+		naf_free(ourmodule, outfilename);
 		outfilename = NULL;
 	}
 
