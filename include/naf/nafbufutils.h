@@ -49,6 +49,7 @@ int naf_sbuf_prepend(naf_sbuf_t *sbuf, naf_u16_t bytesneeded);
 
 /* cursor modifiers */
 int naf_sbuf_getpos(naf_sbuf_t *sbuf);
+int naf_sbuf_setpos(naf_sbuf_t *sbuf, naf_u16_t npos);
 naf_u8_t *naf_sbuf_getposptr(naf_sbuf_t *sbuf);
 int naf_sbuf_bytesremaining(naf_sbuf_t *sbuf);
 int naf_sbuf_rewind(naf_sbuf_t *sbuf);
@@ -68,6 +69,7 @@ int naf_sbuf_put16(naf_sbuf_t *sbuf, naf_u16_t v);
 int naf_sbuf_put32(naf_sbuf_t *sbuf, naf_u32_t v);
 int naf_sbuf_putraw(naf_sbuf_t *sbuf, const naf_u8_t *inbuf, int inbuflen);
 
+int naf_sbuf_cmp(naf_sbuf_t *sbuf, const naf_u8_t *cmpbuf, int cmpbuflen);
 
 #endif /* __NAFBUFUTILS_H__ */
 

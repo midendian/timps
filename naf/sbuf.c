@@ -110,7 +110,7 @@ int naf_sbuf_bytesremaining(naf_sbuf_t *sbuf)
 	return sbuf->sbuf_buflen - sbuf->sbuf_pos;
 }
 
-static int naf_sbuf_setpos(naf_sbuf_t *sbuf, naf_u16_t npos)
+int naf_sbuf_setpos(naf_sbuf_t *sbuf, naf_u16_t npos)
 {
 
 	if ((npos > sbuf->sbuf_buflen) &&
@@ -262,4 +262,15 @@ int naf_sbuf_putraw(naf_sbuf_t *sbuf, const naf_u8_t *inbuf, int inbuflen)
 	return inbuflen;
 }
 
+int naf_sbuf_cmp(naf_sbuf_t *sbuf, const naf_u8_t *cmpbuf, int cmpbuflen)
+{
+
+	if (naf_sbuf_bytesremaining(sbuf) < cmpbuflen)
+		return -1; /* not enough to compare */
+
+	if (memcmp(sbuf->sbuf_buf + sbuf->sbuf_pos, cmpbuf, cmpbuflen) == 0)
+		return 0; /* match */
+
+	return 1; /* no match */
+}
 
