@@ -43,6 +43,11 @@ specified must be writable by timps.) Then, add:
     -M modules/timpsotr/.libs/libtimpsotr.so
 to your timpsd command line.  (You can have multiple -M options.)
 
+If it doesn't seem to be working, make sure there are no errors near the
+"loaded module timps-otr" line in the timps system log.  Depending on your
+system, you may need to run something like /sbin/ldconfig, or add the location
+of libotr.so to something like /etc/ld.so.conf.
+
 WARNING: The OTR module is even more experimental/fragile than the rest of
 timps!
 
