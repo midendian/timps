@@ -44,7 +44,7 @@ tlogging_msglogger(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct g
 
 			gmhi->destnode ? gmhi->destnode->name : gm->destname,
 			gmhi->destnode ? gmhi->destnode->service : gm->destnameservice,
-			(gmhi->destnode && gmhi->destnode->ownermod) ? gmhi->srcnode->ownermod->name : "unknown",
+			(gmhi->destnode && gmhi->destnode->ownermod) ? gmhi->destnode->ownermod->name : "unknown",
 
 			route, gmhi->targetmod ? gmhi->targetmod->name : "unknown",
 
