@@ -615,6 +615,9 @@ int naf_conn_reqread(struct nafconn *conn, unsigned char *buf, int buflen, int o
 	if (!conn || !conn->fdt || !buf || (buflen <= 0))
 		return -1;
 
+	if (conndebug > 2)
+		dvprintf(ourmodule, "adding read buffer (%p) of length %d (offset %d) to cid %ld\n", buf, buflen, offset, conn->cid);
+
 	return nbio_addrxvector(&gnb, conn->fdt, buf, buflen, offset);
 }
 
@@ -771,6 +774,9 @@ int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, cons
 	char newhost[256];
 	struct sockaddr_in sai;
 	int status, inprogress = 0;
+
+	if (!mod || !localconn || !host)
+		return -1;
 
 	strncpy(newhost, host, sizeof(newhost));
 	if (index(newhost, ':')) {
