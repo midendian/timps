@@ -6,6 +6,7 @@ noinst_LIBRARIES = libgnr.a
 
 libgnr_a_SOURCES = \
 	core.c \
+	core.h \
 	msg.c \
 	msg.h \
 	node.c \

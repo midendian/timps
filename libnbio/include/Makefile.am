@@ -1,5 +1,5 @@
 
-pkginclude_HEADERS = libnbio.h
+EXTRA_DIST = libnbio.h
 
 
 

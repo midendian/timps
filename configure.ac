@@ -56,7 +56,6 @@ AC_OUTPUT([
 	modules/Makefile
 	modules/nafbasicmodule/Makefile
 	modules/nafconsole/Makefile
-	modules/timpsotr/Makefile
 	naf/Makefile
 	naf/ipv4/Makefile
 	gnr/Makefile
