@@ -22,26 +22,47 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#ifdef WIN32
+#include <configwin32.h>
+#endif
+
+#ifdef HAVE_STDIO_H
+#include <stdio.h>
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#ifdef HAVE_READLINE_READLINE_H
+#include <readline/readline.h>
+#endif
+#ifdef HAVE_READLINE_HISTORY_H
+#include <readline/history.h>
+#endif
+
 #include <naf/naf.h>
 #include <naf/nafmodule.h>
 #include <naf/nafrpc.h>
 #include <naf/nafconfig.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 
 static struct nafmodule *nafconsole__module = NULL;
 static char *nafconsole__prompt = NULL;
 #define NAFCONSOLE_DEBUG_DEFAULT 0
 static int nafconsole__debug = NAFCONSOLE_DEBUG_DEFAULT;
 
+#define ISWHITE(x) (((x) == ' ') || ((x) == '\t'))
+
+typedef int (*rlfunc)(char *arg);
+
 typedef struct {
 	char *name;
-	Function *func;
-	char *doc;
+	rlfunc func;
+	const char *doc;
 } cmd_t;
 
 static int cmd_call(char *arg);
@@ -55,7 +76,7 @@ static int cmd_call(char *arg);
  */
 static cmd_t cmdlist[] = {
 	{ "call", cmd_call, "Invoke a NAF RPC method"},
-	{ (char *)NULL, (Function *)NULL, (char *)NULL }
+	{ (char *)NULL, (rlfunc)NULL, (char *)NULL }
 };
 
 static void dumpargs(naf_rpc_arg_t *head, int depth)
@@ -90,7 +111,7 @@ static void dumpargs(naf_rpc_arg_t *head, int depth)
 
 static const char *stripwhitefront(const char *c)
 {
-	while ((*c == ' ') || (*c == '\t'))
+	while (c && ISWHITE(*c))
 		c++;
 	return c;
 }
@@ -403,10 +424,10 @@ static int cmdexec(char *line, int depth)
 
 	/* Isolate the command word. */
 	i = 0;
-	while (line[i] && whitespace(line[i]))
+	while (line[i] && ISWHITE(line[i]))
 		i++;
 	word = line + i;
-	while (line[i] && !whitespace(line[i]))
+	while (line[i] && !ISWHITE(line[i]))
 		i++;
 	if (line[i])
 		line[i++] = '\0';
@@ -436,7 +457,7 @@ static int cmdexec(char *line, int depth)
 	}
 
 	/* Get argument to command, if any. */
-	while (whitespace(line[i]))
+	while (ISWHITE(line[i]))
 		i++;
 
 	word = line + i;
@@ -509,14 +530,14 @@ static char *stripwhite(char *string)
 {
 	register char *s, *t;
 
-	for (s = string; whitespace (*s); s++)
+	for (s = string; ISWHITE(*s); s++)
 		;
 
 	if (*s == 0)
 		return (s);
 
 	t = s + strlen (s) - 1;
-	while (t > s && whitespace (*t))
+	while (t > s && ISWHITE(*t))
 		t--;
 	*++t = '\0';
 
@@ -581,7 +602,9 @@ static int modinit(struct nafmodule *mod)
 	rl_attempted_completion_function = (CPPFunction *)cmdcomplete;
 
 	rl_callback_handler_install(nafconsole__prompt, &fullline);
+#if 0
 	rl_clear_signals();
+#endif
 
 	return 0;
 }

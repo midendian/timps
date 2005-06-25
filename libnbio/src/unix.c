@@ -26,20 +26,29 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
-
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
-
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif
+#ifdef HAVE_ERRNO_H
 #include <errno.h>
+#endif
+#ifdef HAVE_STDIO_H
+#include <stdio.h>
+#endif
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
+#ifdef HAVE_STRING_H
+#include <string.h>
 #endif
 
 #include <libnbio.h>
@@ -157,7 +166,7 @@ static int fdt_connect_handler(void *nbv, int event, nbio_fd_t *fdt)
 	nbio_t *nb = (nbio_t *)nbv;
 	struct connectinginfo *ci = (struct connectinginfo *)fdt->priv;
 	int error = 0;
-	int len = sizeof(error);
+	socklen_t len = sizeof(error);
 
 	if ((event != NBIO_EVENT_READ) && (event != NBIO_EVENT_WRITE)) {
 
@@ -266,7 +275,7 @@ int fdt_connect(nbio_t *nb, const struct sockaddr *addr, int addrlen, nbio_handl
 
 nbio_sockfd_t fdt_acceptfd(nbio_sockfd_t fd, struct sockaddr *saret, int *salen)
 {
-	return accept(fd, saret, salen);
+	return accept(fd, saret, (socklen_t *)salen);
 }
 
 #endif

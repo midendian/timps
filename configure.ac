@@ -16,11 +16,31 @@ GNR_LDADD="\$(top_srcdir)/gnr/libgnr.a"
 # gcc3.x changed to C99, which has this lovely feature-bug that breaks NAF tags.
 CFLAGS="-fno-strict-aliasing"
 
+# XXX this should use AC_DEFINE, not CFLAGS
 EXPAT_LIBS=
 EXPAT_CFLAGS=
 AC_CHECK_LIB(expat, XML_Parse,
 	EXPAT_LIBS="-lexpat",
 	EXPAT_CFLAGS="-DNOXML")
+
+# this is all for the nafconsole module
+NAF_READLINELIBS=
+AC_CHECK_HEADERS(readline/readline.h readline/history.h)
+AC_CHECK_LIB(readline, rl_callback_handler_install,
+	AC_CHECK_LIB(history, add_history,
+		[rlhist="both"],
+		[rlhist="readline"]),
+	[rlhist="none"])
+if test "$rlhist" = "both"; then
+	NAF_READLINELIBS="-lcurses -lreadline -lhistory"
+	AC_DEFINE(NAF_USEREADLINE, 1, [Define if readline is available])
+	AC_DEFINE(NAF_USELIBHISTORY, 1, [Define if libhistory is available])
+fi
+if test "$rlhist" = "readline"; then
+	NAF_READLINELIBS="-lcurses -lreadline"
+	AC_DEFINE(NAF_USEREADLINE, 1, [Define if readline is available])
+fi
+AC_SUBST(NAF_READLINELIBS)
 
 AC_FUNC_MMAP
 
@@ -38,12 +58,17 @@ if test "$enable_ipv4" = "yes"; then
 	fi
 fi
 
+AC_DEFINE(NAF_MEM_ENABLED, 1, [Define to use NAF memory debugging])
+
 AC_CHECK_LIB(dl, dlopen, NAF_LDADD="-ldl $NAF_LDADD")
 AC_SUBST(NAF_LDADD)
 AC_SUBST(GNR_LDADD)
 
 AC_SUBST(EXPAT_LIBS)
 AC_SUBST(EXPAT_CFLAGS)
+
+AC_SUBST(READLINE_LIBS)
+AC_SUBST(READLINE_CFLAGS)
 
 NAF_INCLUDES="-I\$(top_srcdir)/libmx/include -I\$(top_srcdir)/libnbio/include -I\$(top_srcdir)/include "
 AC_SUBST(NAF_INCLUDES)

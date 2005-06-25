@@ -19,6 +19,8 @@
 /*
  * Wrappers / debugging for memory management.
  *
+ * XXX should have a way to operate without headers/footers on the memory
+ * segments.
  */
 
 #ifdef HAVE_CONFIG_H

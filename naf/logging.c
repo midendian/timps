@@ -114,11 +114,12 @@ static int logging_start(struct nafmodule *mod, char *filename, char **fnret, FI
 			*fnret = naf_strdup(mod, filename);
 		} else if (!filename && !*fnret) {
 			*streamret = stderr;
-		} 
+		}
 
 		if (*fnret) {
 			/* XXX make append/overwrite an option */
 			if (!(*streamret = fopen(*fnret, "a+"))) {
+				fprintf(stderr, "XXX '%s': %s\n", *fnret, strerror(errno));
 				logprintf(STREAM_GENERIC, mod->name, "Unable to open log file %s: %s\n", *fnret, strerror(errno));
 				*streamret = NULL;
 

@@ -263,6 +263,7 @@ int naf_childproc_tag_fetch(struct nafmodule *mod, naf_childproc_t *cp, const ch
  */
 #define NAF_MEM_TYPE_GENERIC 0
 #define NAF_MEM_TYPE_NETBUF  1
+#ifdef NAF_MEM_ENABLED
 void *naf_malloc_real(struct nafmodule *mod, int type, size_t size, const char *file, int line);
 #define naf_malloc(x, z) naf_malloc_real(x, NAF_MEM_TYPE_GENERIC, z, __FILE__, __LINE__)
 #define naf_malloc_type(x, y, z) naf_malloc_real(x, y, z, __FILE__, __LINE__)
@@ -271,6 +272,11 @@ void naf_free_real(struct nafmodule *mod, void *ptr, const char *file, int line)
 
 char *naf_strdup_type(struct nafmodule *mod, int type, const char *s);
 #define naf_strdup(x, y) naf_strdup_type(x, NAF_MEM_TYPE_GENERIC, y)
+#else
+#define naf_malloc(x, z) malloc(z)
+#define naf_free(x, y) free(y)
+#define naf_strdup(x, y) strdup(y)
+#endif
 
 #if 0
 #define malloc(x) laksjdfj

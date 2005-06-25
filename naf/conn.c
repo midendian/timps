@@ -535,9 +535,11 @@ static int fillendpoints(struct nafconn *conn)
 	memset(&conn->remoteendpoint, 0, sizeof(conn->remoteendpoint));
 	memset(&conn->localendpoint, 0, sizeof(conn->localendpoint));
 	if (conn->fdt) {
-		int remotesize = sizeof(conn->remoteendpoint);
-		int localsize = sizeof(conn->localendpoint);
-		int origremotesize = sizeof(conn->origremoteendpoint);
+		socklen_t remotesize = sizeof(conn->remoteendpoint);
+		socklen_t localsize = sizeof(conn->localendpoint);
+#ifdef HAVE_LINUX_NETFILTER_IPV4_H
+		socklen_t origremotesize = sizeof(conn->origremoteendpoint);
+#endif
 
 		if ((getsockname(conn->fdt->fd, (struct sockaddr *)&conn->localendpoint, &localsize) == 0)) {
 			if (naf_conn__debug) {
