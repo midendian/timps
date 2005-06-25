@@ -24,6 +24,9 @@
 #endif
 
 #include <naf/nafmodule.h>
+
+#ifdef NAF_USEIPV4
+
 #include <naf/nafconfig.h>
 #include <naf/nafbufutils.h>
 
@@ -218,4 +221,14 @@ naf_icmpv4__register(void)
 {
 	return naf_module__registerresident("icmpv4", modfirst, NAF_MODULE_PRI_SECONDPASS);
 }
+
+#else /* NAF_USEIPV4 */
+
+int
+naf_icmpv4__register(void)
+{
+	return 0;
+}
+
+#endif /* NAF_USEIPV4 */
 

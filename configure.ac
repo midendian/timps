@@ -24,7 +24,19 @@ AC_CHECK_LIB(expat, XML_Parse,
 
 AC_FUNC_MMAP
 
-AC_CHECK_HEADERS(unistd.h sys/types.h sys/socket.h netinet/in.h netdb.h sys/time.h ctype.h stdlib.h sys/stat.h string.h sys/resource.h pwd.h grp.h stdio.h errno.h syslog.h time.h sys/poll.h stdarg.h arpa/inet.h signal.h sys/mman.h sys/wait.h fcntl.h sys/ioctl.h linux/netfilter_ipv4.h linux/netdevice.h linux/if_tun.h netinet/ip.h)
+AC_CHECK_HEADERS(unistd.h sys/types.h sys/socket.h netinet/in.h netdb.h sys/time.h ctype.h stdlib.h sys/stat.h string.h sys/resource.h pwd.h grp.h stdio.h errno.h syslog.h time.h sys/poll.h stdarg.h arpa/inet.h signal.h sys/mman.h sys/wait.h fcntl.h sys/ioctl.h)
+
+# used for getting the real destination address on linux
+AC_CHECK_HEADERS(linux/netfilter_ipv4.h) 
+
+AC_CHECK_HEADERS(netinet/ip.h netinet/in.h, [enable_ipv4="yes"], [enable_ipv4="no"])
+if test "$enable_ipv4" = "yes"; then
+	AC_DEFINE(NAF_USEIPV4, 1, [Define if IPv4 enabled.])
+	AC_CHECK_HEADERS(linux/netdevice.h linux/if_tun.h, [enable_ipv4_linuxtun="yes"], [enable_ipv4_linuxtun="no"])
+	if test "$enable_ipv4_linuxtun" = "yes"; then
+		AC_DEFINE(NAF_USEIPV4_LINUXTUN, 1, [Define if linuxtun enabled.])
+	fi
+fi
 
 AC_CHECK_LIB(dl, dlopen, NAF_LDADD="-ldl $NAF_LDADD")
 AC_SUBST(NAF_LDADD)

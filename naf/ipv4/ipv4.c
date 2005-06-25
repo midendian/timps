@@ -23,7 +23,11 @@
 #include <configwin32.h>
 #endif
 
+
 #include <naf/nafmodule.h>
+
+#ifdef NAF_USEIPV4
+
 #include <naf/nafconfig.h>
 #include <naf/nafbufutils.h>
 #include <naf/nafrpc.h>
@@ -294,7 +298,7 @@ naf_ipv4_prot__unregisterall(void)
 #define MINIPHDRLEN 20
 
 static int
-getiphdr(naf_sbuf_t *sb, struct iphdr *iph)
+getiphdr(naf_sbuf_t *sb, struct nafnet_ipraw *iph)
 {
 	naf_u8_t b;
 
@@ -302,19 +306,19 @@ getiphdr(naf_sbuf_t *sb, struct iphdr *iph)
 		return -1;
 
 	b = naf_sbuf_get8(sb);
-	iph->version = (b >> 4) & 0xf;
-	iph->ihl = b & 0xf;
-	iph->tos = naf_sbuf_get8(sb);
-	iph->tot_len = naf_sbuf_get16(sb);
-	iph->id = naf_sbuf_get16(sb);
-	iph->frag_off = naf_sbuf_get16(sb);
-	iph->ttl = naf_sbuf_get8(sb);
-	iph->protocol = naf_sbuf_get8(sb);
-	iph->check = naf_sbuf_get16(sb);
+	iph->ip_v = (b >> 4) & 0xf;
+	iph->ip_hl = b & 0xf;
+	iph->ip_tos = naf_sbuf_get8(sb);
+	iph->ip_len = naf_sbuf_get16(sb);
+	iph->ip_id = naf_sbuf_get16(sb);
+	iph->ip_off = naf_sbuf_get16(sb);
+	iph->ip_ttl = naf_sbuf_get8(sb);
+	iph->ip_p = naf_sbuf_get8(sb);
+	iph->ip_sum = naf_sbuf_get16(sb);
 		naf_sbuf_setpos(sb, naf_sbuf_getpos(sb) - 2);
 		naf_sbuf_put16(sb, 0x0000); /* for calculating csum later */
-	iph->saddr = naf_sbuf_get32(sb);
-	iph->daddr = naf_sbuf_get32(sb);
+	iph->ip_src.s_addr = naf_sbuf_get32(sb);
+	iph->ip_dst.s_addr = naf_sbuf_get32(sb);
 
 	return 0;
 }
@@ -457,7 +461,7 @@ naf_ipv4_ip_free(struct nafmodule *mod, struct nafnet_ip *ip)
 int
 naf_ipv4_input(struct nafmodule *inmod, struct nafnet_if *recvif, naf_u8_t *buf, naf_u16_t buflen)
 {
-	struct iphdr iph;
+	struct nafnet_ipraw iph;
 	naf_sbuf_t sb;
 	struct nafnet_ip ip;
 	naf_u16_t hdrlen;
@@ -468,27 +472,28 @@ naf_ipv4_input(struct nafmodule *inmod, struct nafnet_if *recvif, naf_u8_t *buf,
 	naf_sbuf_init(naf_ipv4__module, &sb, buf, buflen);
 	if (getiphdr(&sb, &iph) == -1)
 		goto out;
-	hdrlen = iph.ihl * 4;
-	if ((hdrlen > buflen) || (iph.tot_len > buflen))
+	hdrlen = iph.ip_hl * 4;
+	if ((hdrlen > buflen) || (iph.ip_len > buflen))
 		goto out;
 	sb.sbuf_buflen = hdrlen; /* trim down this sbuf */
 
 	if (naf_ipv4__debug > 1) {
 		dvprintf(naf_ipv4__module, "received IP packet: ver = %d, ihl = %d, tot_len = %d, ttl = %d, saddr = 0x%08lx, daddr = 0x%08lx, protocol %d, csum 0x%04x\n",
-							iph.version, iph.ihl,
-							iph.tot_len, iph.ttl,
-							iph.saddr, iph.daddr,
-							iph.protocol,
-							iph.check);
+							iph.ip_v, iph.ip_hl,
+							iph.ip_len, iph.ip_ttl,
+							iph.ip_src.s_addr,
+							iph.ip_dst.s_addr,
+							iph.ip_p,
+							iph.ip_sum);
 	}
 
-	if (iph.version != 4)
+	if (iph.ip_v != 4)
 		goto out;
-	if (iph.ttl == 0)
+	if (iph.ip_ttl == 0)
 		goto out;
-	if (naf_ipv4__hdrcsum(buf, hdrlen) != iph.check) {
+	if (naf_ipv4__hdrcsum(buf, hdrlen) != iph.ip_sum) {
 		if (naf_ipv4__debug)
-			dvprintf(naf_ipv4__module, "bad IPv4 checksum from 0x%08lx\n", iph.saddr);
+			dvprintf(naf_ipv4__module, "bad IPv4 checksum from 0x%08lx\n", iph.ip_src.s_addr);
 		goto out;
 	}
 
@@ -496,10 +501,10 @@ naf_ipv4_input(struct nafmodule *inmod, struct nafnet_if *recvif, naf_u8_t *buf,
 
 	memset(&ip, 0, sizeof(struct nafnet_ip));
 	naf_sbuf_init(naf_ipv4__module, &ip.ip_data, buf + hdrlen,
-							iph.tot_len - hdrlen);
-	ip.ip_tos = iph.tos; ip.ip_id = iph.id; ip.ip_fragoff = iph.frag_off;
-	ip.ip_ttl = iph.ttl; ip.ip_protocol = iph.protocol;
-	ip.ip_saddr = iph.saddr; ip.ip_daddr = iph.daddr;
+							iph.ip_len - hdrlen);
+	ip.ip_tos = iph.ip_tos; ip.ip_id = iph.ip_id; ip.ip_fragoff = iph.ip_off;
+	ip.ip_ttl = iph.ip_ttl; ip.ip_protocol = iph.ip_p;
+	ip.ip_saddr = iph.ip_src.s_addr; ip.ip_daddr = iph.ip_dst.s_addr;
 	ip.ip_fields = NAF_NET_IPFIELD_TOS| NAF_NET_IPFIELD_ID |
 		       NAF_NET_IPFIELD_FRAGOFF | NAF_NET_IPFIELD_TTL |
 		       NAF_NET_IPFIELD_PROTOCOL | NAF_NET_IPFIELD_SADDR |
@@ -712,4 +717,14 @@ naf_ipv4__register(void)
 {
 	return naf_module__registerresident("ipv4", modfirst, NAF_MODULE_PRI_SECONDPASS);
 }
+
+#else /* NAF_USEIPV4 */
+
+int
+naf_ipv4__register(void)
+{
+	return 0;
+}
+
+#endif /* NAF_USEIPV4 */
 

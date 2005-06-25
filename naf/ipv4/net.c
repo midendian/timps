@@ -24,6 +24,12 @@
 #endif
 
 #include <naf/nafmodule.h>
+
+/* XXX should be able to compile this without IPv4, since we may have other
+ * protocols in the future
+ */
+#ifdef NAF_USEIPV4
+
 #include <naf/nafconfig.h>
 #include <naf/nafrpc.h>
 
@@ -76,7 +82,8 @@ naf_net_if__configure(struct nafnet_if *iff)
 	char *p;
 
 	naf_net_if_addr_remallbytype(iff, NAFNET_AF_INET);
-	{
+#ifdef NAFNET_USE_IPV4
+	/* XXX should be in ipv4.c */ {
 		struct in_addr ina, inam;
 
 		memset(&ina, 0, sizeof(struct in_addr));
@@ -109,6 +116,7 @@ naf_net_if__configure(struct nafnet_if *iff)
 			dvprintf(naf_net__module, "failed to add address %s to %s\n", inet_ntoa(ina), iff->if_name);
 		}
 	}
+#endif /* def NAFNET_USE_IPV4 */
 
 	{
 		int nmtu;
@@ -213,6 +221,7 @@ naf_net_ifaddr__alloc(void)
 static int
 naf_net_if_addr_add_ipv4(struct nafnet_if *iff, naf_u32_t addr, naf_u32_t mask)
 {
+#ifdef NAFNET_USE_IPV4
 	struct nafnet_ifaddr *ifa;
 
 	if (!(ifa = naf_net_ifaddr__alloc()))
@@ -224,7 +233,7 @@ naf_net_if_addr_add_ipv4(struct nafnet_if *iff, naf_u32_t addr, naf_u32_t mask)
 
 	ifa->ifa__next = iff->if_addrs;
 	iff->if_addrs = ifa;
-
+#endif /* def NAFNET_USE_IPV4 */
 	return 0;
 }
 
@@ -474,4 +483,14 @@ naf_net__register(void)
 {
 	return naf_module__registerresident("net", modfirst, NAF_MODULE_PRI_FIRSTPASS);
 }
+
+#else /* NAF_USEIPV4 */
+
+int
+naf_net__register(void)
+{
+	return 0;
+}
+
+#endif
 

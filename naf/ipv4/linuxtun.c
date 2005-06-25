@@ -24,6 +24,9 @@
 #endif
 
 #include <naf/nafmodule.h>
+
+#ifdef NAF_USEIPV4_LINUXTUN
+
 #include <naf/nafconfig.h>
 
 #include "../module.h" /* for naf_module__registerresident() */
@@ -50,9 +53,6 @@
 #ifdef HAVE_LINUX_NETDEVICE_H
 #include <linux/netdevice.h>
 #endif
-
-/* XXX should probably have a --enable=linuxtun or something to configure */
-#ifdef HAVE_LINUX_IF_TUN_H
 
 #include <linux/if_tun.h>
 
@@ -235,7 +235,7 @@ naf_linuxtun__register(void)
 	return naf_module__registerresident("linuxtun", modfirst, NAF_MODULE_PRI_THIRDPASS);
 }
 
-#else /* HAVE_LINUX_IF_TUN_H */
+#else /* NAF_USEIPV4_LINUXTUN */
 
 int
 naf_linuxtun__register(void)
@@ -243,5 +243,5 @@ naf_linuxtun__register(void)
 	return 0;
 }
 
-#endif
+#endif /* NAF_USEIPV4_LINUXTUN */
 
