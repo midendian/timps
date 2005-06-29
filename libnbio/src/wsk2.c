@@ -215,6 +215,11 @@ static int setmaxfd(nbio_t *nb)
 	nbio_fd_t *cur;
 
 	for (cur = (nbio_fd_t *)nb->fdlist; cur; cur = cur->next) {
+		struct fdtdata *data = (struct fdtdata *)cur->intdata;
+
+		if (data->flags == WANT_NONE)
+			continue;
+
 		if (cur->fd > maxfd)
 			maxfd = cur->fd;
 	}
@@ -281,9 +286,11 @@ int pfdpoll(nbio_t *nb, int timeout)
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
 
-	memset(&tv, 0, sizeof(tv));
-	tv.tv_sec = timeout / 1000;
-	tv.tv_usec = (timeout % 1000) * 1000;
+	if (timeout != -1) {
+		memset(&tv, 0, sizeof(tv));
+		tv.tv_sec = timeout / 1000;
+		tv.tv_usec = (timeout % 1000) * 1000;
+	}
 
 	for (cur = (nbio_fd_t *)nb->fdlist; cur; cur = cur->next) {
 		struct fdtdata *data = (struct fdtdata *)cur->intdata;
@@ -300,7 +307,8 @@ int pfdpoll(nbio_t *nb, int timeout)
 	}
 
 	errno = 0;
-	if ((selret = select(nbd->maxfd+1, &rfds, &wfds, NULL, &tv)) == SOCKET_ERROR) {
+	if ((selret = select(nbd->maxfd+1, &rfds, &wfds, NULL,
+			     (timeout == -1) ? NULL : &tv)) == SOCKET_ERROR) {
 
 		wsa_seterrno();
 
@@ -352,6 +360,8 @@ void fdt_setpollin(nbio_t *nb, nbio_fd_t *fdt, int val)
 	else
 		data->flags &= ~WANT_READ;
 
+	setmaxfd(nb);
+
 	return;
 }
 
@@ -365,6 +375,8 @@ void fdt_setpollout(nbio_t *nb, nbio_fd_t *fdt, int val)
 	else
 		data->flags &= ~WANT_WRITE;
 
+	setmaxfd(nb);
+
 	return;
 }
 
@@ -374,6 +386,8 @@ void fdt_setpollnone(nbio_t *nb, nbio_fd_t *fdt)
 	struct fdtdata *data = (struct fdtdata *)fdt->intdata;
 
 	data->flags &= ~(WANT_READ | WANT_WRITE);
+
+	setmaxfd(nb);
 
 	return;
 }

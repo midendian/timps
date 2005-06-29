@@ -20,7 +20,7 @@
 #include <config.h>
 #endif
 
-#if !defined(NBIO_USE_KQUEUE) && !defined(NBIO_USE_WINSOCK2)
+#if !defined(NBIO_USE_KQUEUE) && !defined(NBIO_USE_WINSOCK2) && !defined(NBIO_USE_SELECT)
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -256,7 +256,8 @@ int pfdpoll(nbio_t *nb, int timeout)
 			}
 
 			if (pfd && ((pfd->revents & POLLERR) ||
-					 (pfd->revents & POLLHUP))) {
+					 (pfd->revents & POLLHUP) ||
+					 (pfd->revents & POLLNVAL))) {
 				if (__fdt_ready_eof(nb, cur) == -1)
 					return -1;
 			}
