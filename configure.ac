@@ -9,12 +9,23 @@ AC_PROG_CC
 AC_HEADER_STDC
 AM_PROG_LIBTOOL
 
+case "$ac_cv_host" in
+	*-*-darwin*)
+		[macosx="yes"]
+		;;
+esac
+
 # this are only relevent for linking the core, not the plugins
 NAF_LDADD="\$(top_srcdir)/naf/libnaf.a \$(top_srcdir)/naf/ipv4/libnaf-ipv4.a \$(top_srcdir)/libmx/src/libmx.a \$(top_srcdir)/libnbio/src/libnbio.a"
 GNR_LDADD="\$(top_srcdir)/gnr/libgnr.a"
 
 # gcc3.x changed to C99, which has this lovely feature-bug that breaks NAF tags.
 CFLAGS="-fno-strict-aliasing"
+
+if test "$macosx" = "yes"; then
+	dnl pre-Tiger doesn't have poll(), and Tiger's poll is broken as hell.
+	AC_DEFINE(NBIO_USE_SELECT, 1, [Define if select should be used instead of poll on UNIX])
+fi
 
 # XXX this should use AC_DEFINE, not CFLAGS
 EXPAT_LIBS=
