@@ -237,7 +237,7 @@ static void freestatlist(void)
  *      [optional] string module;
  *      string stat;
  *      [optional] scalar value;
- *      
+ *
  */
 static void __rpc_stats_getstat(struct nafmodule *mod, naf_rpc_req_t *req)
 {

@@ -442,8 +442,8 @@ static int helpiter(struct nafmodule *mod, struct nafmodule *cur, void *udata)
  *      [optional] array methods {
  *          array module {
  *              array method {
- *      	    [optional] string description;
- *      	}
+ *		    [optional] string description;
+ *		}
  *          }
  *      }
  *

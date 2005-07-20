@@ -55,7 +55,7 @@ static char *nafconsole__prompt = NULL;
 #define NAFCONSOLE_DEBUG_DEFAULT 0
 static int nafconsole__debug = NAFCONSOLE_DEBUG_DEFAULT;
 
-#define ISWHITE(x) (((x) == ' ') || ((x) == '\t'))
+#define ISWHITE(x) (((x) == ' ') || ((x) == '\t') || ((x) == '\n'))
 
 typedef int (*rlfunc)(char *arg);
 
@@ -575,7 +575,6 @@ static int modinit(struct nafmodule *mod)
 	} else if (!(nafconsole__prompt = naf_strdup(mod, "naf>")))
 		return -1;
 
-
 	/*
 	 * Yay for "everything's a file".
 	 */
@@ -599,6 +598,7 @@ static int modinit(struct nafmodule *mod)
 	if (!nafconsole__macrolist)
 		macro_adddefaults();
 
+	rl_initialize();
 	rl_attempted_completion_function = (CPPFunction *)cmdcomplete;
 
 	rl_callback_handler_install(nafconsole__prompt, &fullline);

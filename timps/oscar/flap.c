@@ -404,7 +404,7 @@ toscar_flap_handleread(struct nafmodule *mod, struct nafconn *conn)
 			goto errout;
 		buf = NULL; /* consumed by sendraw */
 	}
-	/* 
+	/*
 	 * HRET_DIGESTED means the packet was processed but should not be
 	 * forwarded -- it was not consumed, in the memory management sense, so
 	 * we can reuse it.

@@ -187,10 +187,10 @@ static void closefdt(nbio_fd_t *fdt)
 	return;
 }
 
-/* 
+/*
  * This doesn't handle the case where cur is pointed to by a
  * connection's endpoint other than dead... that would turn into a
- * recursive mess. It'll will never happen anyway.  
+ * recursive mess. It'll will never happen anyway.
  */
 static void remendpoint(struct nafconn *dead)
 {

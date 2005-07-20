@@ -305,11 +305,12 @@ void naf_free_real(struct nafmodule *mod, void *ptr, const char *file, int line)
 			(hdr->hdrmagic1 != HDR_MAGIC_START)) {
 
 		if (naf_memory__debug) {
-			dvprintf(NULL, "[%s:%d] NAF_FREE(%p=%s, %p) -- buffer was not allocated with naf_malloc!\n",
+			dvprintf(NULL, "[%s:%d] NAF_FREE(%p=%s, %p) -- buffer was not allocated with naf_malloc! 0x%08lx, 0x%08lx\n",
 					file, line,
 					mod,
 					mod ? mod->name : "(none)",
-					ptr);
+					ptr,
+					hdr->hdrmagic2, hdr->hdrmagic1);
 		}
 
 		/* assuming it's not ours, free the pointer as given */
