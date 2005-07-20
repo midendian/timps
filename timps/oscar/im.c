@@ -29,6 +29,9 @@
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
+#ifdef HAVE_STDIO_H
+#include <stdio.h>
+#endif
 
 #include <naf/nafmodule.h>
 #include <naf/nafconn.h>
@@ -43,15 +46,43 @@
 
 #define MSGCOOKIELEN 8
 
-static char *
-toscar_icbm__extractmsgtext(struct nafmodule *mod, naf_tlv_t *msgtlv)
+/* YYY could probably use sbufs instead of strings for this. */
+static int
+extendstr(struct nafmodule *mod, char **s, char **e, int n)
+{
+	char *ns;
+
+	if (!*s) {
+		if (!(*s = naf_malloc(mod, n + 1)))
+			return -1;
+		**s = '\0';
+		*e = *s;
+		return 0;
+	}
+
+	/* XXX it would help if there were a naf_realloc(). */
+	if (!(ns = naf_malloc(mod, (*e - *s) + n + 1)))
+		return -1;
+	memcpy(ns, *s, (*e - *s) + 1);
+	*e = ns + (*e - *s);
+	naf_free(mod, *s);
+	*s = ns;
+
+	return 0;
+}
+
+static int
+toscar_icbm__extractmsgtext(struct nafmodule *mod, naf_tlv_t *msgtlv, char **msgtextret)
 {
 	naf_sbuf_t sb;
 	char *msgtext = NULL, *msgtextend = NULL;
 	naf_u16_t featlen;
+	int unrepresentable = 0;
 
+	if (!msgtextret)
+		return -1;
 	if (naf_sbuf_init(mod, &sb, msgtlv->tlv_value, msgtlv->tlv_length) == -1)
-		return NULL;
+		return -1;
 
 	/* 0501 */
 	if (naf_sbuf_get8(&sb) != 0x05)
@@ -75,42 +106,77 @@ toscar_icbm__extractmsgtext(struct nafmodule *mod, naf_tlv_t *msgtlv)
 		plen = naf_sbuf_get16(&sb);
 		if (!plen)
 			continue;
+		if (plen < 4)
+			continue;
 
 		/* encoding flags */
 		f1 = naf_sbuf_get16(&sb);
 		f2 = naf_sbuf_get16(&sb);
+		plen -= 4;
 
-		if ((f1 == 0x0000) || (f2 == 0x0003)) { /* ASCII7, ISO-8859-1 */
+		if ((f1 == 0x0000) || (f1 == 0x0003)) { /* ASCII7, ISO-8859-1 */
 
-			/* XXX it would help if there were a naf_realloc(). */
-			if (!msgtext) {
-				if (!(msgtext = naf_malloc(mod, plen - 2 - 2 + 1)))
-					goto out;
-				*msgtext = '\0';
-				msgtextend = msgtext;
-			} else {
-				char *nmsgtext;
+			if (extendstr(mod, &msgtext, &msgtextend, plen) == -1)
+				goto out;
 
-				if (!(nmsgtext = naf_malloc(mod, (msgtextend - msgtext) + (plen - 2 - 2) + 1)))
-					goto out;
-				memcpy(nmsgtext, msgtext, (msgtextend - msgtext) + 1);
-				msgtextend = nmsgtext + (msgtextend - msgtext);
-				naf_free(mod, msgtext);
-				msgtext = nmsgtext;
-			}
 			naf_sbuf_getrawbuf(&sb, (naf_u8_t *)msgtextend, (naf_u16_t)(plen - 2 - 2));
-			msgtextend += plen - 2 - 2;
+			msgtextend += plen;
 			*msgtextend = '\0';
 
-		} else
-			naf_sbuf_advance(&sb, (naf_u16_t)(plen - 2 - 2));
+		} else if ((f1 == 0x0002) && ((plen % 2) == 0)) { /* 16bit UNICODE */
+			int n, start, i;
 
-		/* XXX translate UTF16 parts into &#nnnn; entities */
+			/*
+			 * The idea is to convert the 16bit UNICODE sections
+			 * into something that fits into an ISO-8859-1 section.
+			 * HTML can do UNICODE, and we always use HTML, so
+			 * we go that way.  However, there's no reason to
+			 * use the HTML entity syntax for characters that are
+			 * in ISO-8859-1, which is the first 128 glyphs.
+			 */
+			if (naf_sbuf_bytesremaining(&sb) < plen)
+				goto out;
+			start = naf_sbuf_getpos(&sb);
+			for (i = n = 0; i < plen; i += 2) {
+				naf_u16_t c;
+
+				c = naf_sbuf_get16(&sb);
+				n += (c < 128) ? 1 : 7; /* &#nnnn; */
+			}
+			naf_sbuf_setpos(&sb, start);
+
+			if (extendstr(mod, &msgtext, &msgtextend, n) == -1)
+				goto out;
+
+			for (i = 0; i < plen; i += 2) {
+				naf_u16_t c;
+
+				c = naf_sbuf_get16(&sb);
+				if (c < 128) {
+					*msgtextend = (char)(c & 0xff);
+					msgtextend++;
+				} else {
+					if (snprintf(msgtextend, 7+1, "&#%04x;", c) > 0)
+						msgtextend += 7;
+				}
+			}
+
+			*msgtextend = '\0';
+
+		} else {
+			unrepresentable++;
+			naf_sbuf_advance(&sb, (naf_u16_t)plen);
+		}
 	}
+
+	*msgtextret = msgtext;
+	if (unrepresentable)
+		return 1;
+	return 0;
 
 out:
 	naf_sbuf_free(mod, &sb);
-	return msgtext;
+	return -1;
 }
 
 static int
@@ -161,16 +227,16 @@ toscar_icbm__parsechan1(struct nafmodule *mod, struct nafconn *conn, struct gnrm
 	if ((tlv = naf_tlv_remove(mod, tlvh, 0x0002))) {
 
 		gm->msgtexttype = "text/html";
-		gm->msgtext = toscar_icbm__extractmsgtext(mod, tlv);
-
-		/*
-		 * Since there can be a lot here that isn't easily expressable
-		 * in another form, we'll pass the whole block along to hint
-		 * us later.
-		 */
-		if (gnr_msg_tag_add(mod, gm, "gnrmsg.oscarmsgtlv", 'V', (void *)tlv) == -1)
-			naf_tlv_free(mod, tlv);
-		tlv = NULL;
+		if (toscar_icbm__extractmsgtext(mod, tlv, &gm->msgtext) != 0) {
+			/*
+			 * If there was information in the msgtlv that couldn't
+			 * be expressed in the msgtext, pass it along to use
+			 * later.
+			 */
+			if (gnr_msg_tag_add(mod, gm, "gnrmsg.oscarmsgtlv", 'V', (void *)tlv) == -1)
+				naf_tlv_free(mod, tlv);
+			tlv = NULL;
+		}
 	}
 
 	 /* XXX handle the bug related to host acks */
