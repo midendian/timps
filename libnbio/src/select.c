@@ -21,6 +21,9 @@
  * support should be the lowest common denominator, so we avoid things like
  * FD_COPY() that would be helpful but are non-portable.
  *
+ * (In theory, we could reuse the wsk2 select() support, but it has enough
+ * quirks that it's best to leave it alone.)
+ *
  */
 
 #ifdef HAVE_CONFIG_H
@@ -62,19 +65,11 @@
 
 #define NBIO_PFD_INVAL -1
 
-/* nbio_t->intdata */
-struct nbdata {
-	int maxfd;
-};
-
 int pfdinit(nbio_t *nb, int pfdsize)
 {
-	struct nbdata *nbd;
 
-	if (!(nbd = nb->intdata = malloc(sizeof(struct nbdata))))
-		return -1;
-
-	nbd->maxfd = -1;
+	/* unused. */
+	nb->intdata = NULL;
 
 	return 0;
 }
@@ -82,16 +77,15 @@ int pfdinit(nbio_t *nb, int pfdsize)
 /* This kills the nbio_t, not a pfd -- confusing name. */
 void pfdkill(nbio_t *nb)
 {
-	struct nbdata *nbd = (struct nbdata *)nb->intdata;
 
-	free(nbd);
+	/* unused. */
 	nb->intdata = NULL;
 
 	return;
 }
 
-#define WANT_NONE 0x0000
-#define WANT_READ 0x0001
+#define WANT_NONE  0x0000
+#define WANT_READ  0x0001
 #define WANT_WRITE 0x0002
 
 /* nbio_fd_t->intdata */
@@ -99,6 +93,7 @@ struct fdtdata {
 	unsigned short flags;
 };
 
+#if 0
 static int setmaxfd(nbio_t *nb)
 {
 	struct nbdata *nbd = (struct nbdata *)nb->intdata;
@@ -119,6 +114,7 @@ static int setmaxfd(nbio_t *nb)
 
 	return maxfd;
 }
+#endif
 
 int pfdadd(nbio_t *nb, nbio_fd_t *newfd)
 {
@@ -137,17 +133,13 @@ int pfdadd(nbio_t *nb, nbio_fd_t *newfd)
 
 void pfdaddfinish(nbio_t *nb, nbio_fd_t *newfd)
 {
-
-	setmaxfd(nb);
-
+	/* unused. */
 	return;
 }
 
 void pfdrem(nbio_t *nb, nbio_fd_t *fdt)
 {
-
-	setmaxfd(nb);
-
+	/* unused. */
 	return;
 }
 
@@ -163,11 +155,11 @@ void pfdfree(nbio_fd_t *fdt)
 
 int pfdpoll(nbio_t *nb, int timeout)
 {
-	struct nbdata *nbd = (struct nbdata *)nb->intdata;
 	int selret;
 	nbio_fd_t *cur = NULL, **prev = NULL;
 	fd_set rfds, wfds;
 	struct timeval tv;
+	int maxfd;
 
 	if (!nb) {
 		errno = EINVAL;
@@ -183,49 +175,66 @@ int pfdpoll(nbio_t *nb, int timeout)
 		tv.tv_usec = (timeout % 1000) * 1000;
 	}
 
-	for (cur = (nbio_fd_t *)nb->fdlist; cur; cur = cur->next) {
+	for (cur = (nbio_fd_t *)nb->fdlist, maxfd = -1;
+					cur;
+					cur = cur->next) {
 		struct fdtdata *data = (struct fdtdata *)cur->intdata;
 
 		if (cur->flags & NBIO_FDT_FLAG_CLOSED)
 			continue;
-		if (!data)
+
+		if (data->flags == WANT_NONE)
 			continue;
 
 		if (data->flags & WANT_READ)
 			FD_SET(cur->fd, &rfds);
 		if (data->flags & WANT_WRITE)
 			FD_SET(cur->fd, &wfds);
+
+		if (cur->fd > maxfd)
+			maxfd = cur->fd;
+	}
+
+	if (maxfd == -1) {
+		errno = EINVAL;
+		return -1;
 	}
 
 	errno = 0;
-	if ((selret = select(nbd->maxfd+1, &rfds, &wfds, NULL,
+	if ((selret = select(maxfd+1, &rfds, &wfds, NULL,
 			     (timeout == -1) ? NULL : &tv)) == -1) {
 
-		/* Never return EINTR from nbio_poll... */
+		/* Never return EINTR from pfdpoll... */
 		if (errno == EINTR) {
 			errno = 0;
 			return 0;
 		}
 
 		return -1;
-
 	}
 
 	for (prev = (nbio_fd_t **)&nb->fdlist; (cur = *prev); ) {
 		struct fdtdata *data = (struct fdtdata *)cur->intdata;
 
-		if ((cur->flags & NBIO_FDT_FLAG_CLOSED) || !data) {
+		if (cur->flags & NBIO_FDT_FLAG_CLOSED) {
 			*prev = cur->next;
 			__fdt_free(cur);
 			continue;
 		}
 
-		if (FD_ISSET(cur->fd, &rfds)) {
+		/*
+		 * The FD_*() macros will explode if given a -1 fd.
+		 * Remember that the __fdt_ready_*() functions can close
+		 * connections.
+		 */
+		if (!(cur->flags & NBIO_FDT_FLAG_CLOSED) &&
+					FD_ISSET(cur->fd, &rfds)) {
 			if (__fdt_ready_in(nb, cur) == -1)
 				return -1;
 		}
 
-		if (FD_ISSET(cur->fd, &wfds)) {
+		if (!(cur->flags & NBIO_FDT_FLAG_CLOSED) &&
+					FD_ISSET(cur->fd, &wfds)) {
 			if (__fdt_ready_out(nb, cur) == -1)
 				return -1;
 		}
@@ -241,7 +250,6 @@ int pfdpoll(nbio_t *nb, int timeout)
 
 void fdt_setpollin(nbio_t *nb, nbio_fd_t *fdt, int val)
 {
-	struct nbdata *nbd = (struct nbdata *)nb->intdata;
 	struct fdtdata *data = (struct fdtdata *)fdt->intdata;
 
 	if (val)
@@ -249,14 +257,11 @@ void fdt_setpollin(nbio_t *nb, nbio_fd_t *fdt, int val)
 	else
 		data->flags &= ~WANT_READ;
 
-	setmaxfd(nb);
-
 	return;
 }
 
 void fdt_setpollout(nbio_t *nb, nbio_fd_t *fdt, int val)
 {
-	struct nbdata *nbd = (struct nbdata *)nb->intdata;
 	struct fdtdata *data = (struct fdtdata *)fdt->intdata;
 
 	if (val)
@@ -264,19 +269,14 @@ void fdt_setpollout(nbio_t *nb, nbio_fd_t *fdt, int val)
 	else
 		data->flags &= ~WANT_WRITE;
 
-	setmaxfd(nb);
-
 	return;
 }
 
 void fdt_setpollnone(nbio_t *nb, nbio_fd_t *fdt)
 {
-	struct nbdata *nbd = (struct nbdata *)nb->intdata;
 	struct fdtdata *data = (struct fdtdata *)fdt->intdata;
 
 	data->flags &= ~(WANT_READ | WANT_WRITE);
-
-	setmaxfd(nb);
 
 	return;
 }

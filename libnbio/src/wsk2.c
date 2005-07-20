@@ -331,12 +331,18 @@ int pfdpoll(nbio_t *nb, int timeout)
 			continue;
 		}
 
-		if (FD_ISSET(cur->fd, &rfds)) {
+		/*
+		 * Remember that the __fdt_ready_*() functions can close
+		 * connections.
+		 */
+		if (!(cur->flags & NBIO_FDT_FLAG_CLOSED) &&
+					FD_ISSET(cur->fd, &rfds)) {
 			if (__fdt_ready_in(nb, cur) == -1)
 				return -1;
 		}
 
-		if (FD_ISSET(cur->fd, &wfds)) {
+		if (!(cur->flags & NBIO_FDT_FLAG_CLOSED) &&
+					FD_ISSET(cur->fd, &wfds)) {
 			if (__fdt_ready_out(nb, cur) == -1)
 				return -1;
 		}
