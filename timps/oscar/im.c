@@ -119,7 +119,7 @@ toscar_icbm__extractmsgtext(struct nafmodule *mod, naf_tlv_t *msgtlv, char **msg
 			if (extendstr(mod, &msgtext, &msgtextend, plen) == -1)
 				goto out;
 
-			naf_sbuf_getrawbuf(&sb, (naf_u8_t *)msgtextend, (naf_u16_t)(plen - 2 - 2));
+			naf_sbuf_getrawbuf(&sb, (naf_u8_t *)msgtextend, (naf_u16_t)plen);
 			msgtextend += plen;
 			*msgtextend = '\0';
 
