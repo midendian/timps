@@ -470,7 +470,7 @@ totr_msgroutinghandler(struct nafmodule *mod, int stage, struct gnrmsg *gm, stru
 
 		if (err && !newmsgtext) {
 			newmsgtext2 = naf_strdup(mod, "[encryption failed; previous message not sent]");
-			/* 
+			/*
 			 * XXX have TOTRHelper send a "It looks like you're
 			 * having trouble talking to [dest], do you want to end
 			 * the OTR session" dialog
