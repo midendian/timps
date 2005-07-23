@@ -159,7 +159,7 @@ freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, 
 		if ((node = gnr_node_findbyname(sn, OSCARSERVICE)))
 			gnr_node_offline(node, GNR_NODE_OFFLINE_REASON_DISCONNECTED);
 
-		naf_free(mod, sn); 
+		naf_free(mod, sn);
 
 	} else if (strcmp(tagname, "gnrmsg.oscarmsgcookie") == 0) {
 		naf_u8_t *msgck = (naf_u8_t *)tagdata;

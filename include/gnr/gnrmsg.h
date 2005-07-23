@@ -77,7 +77,7 @@ struct gnrmsg {
 	/* Message type (GNR_MSG_MSGTYPE_) */
 	gnrmsg_msgtype_t type;
 
-	/* 
+	/*
 	 * msgbuf/msgbuflen are message/service-specific and are not
 	 * touched by any of the internal routing routines.
 	 *
@@ -85,7 +85,7 @@ struct gnrmsg {
 	 * information, hints, etc.  For cases where messages are delayed or
 	 * otherwise need duplication, the msgbuf_clonefunc and msgbuf_freefunc
 	 * fields must be filled in if msgbuf is non-NULL.
- 	 */
+	 */
 	void *msgbuf;
 	size_t msgbuflen;
 	gnrmsg_msgbuf_clonefunc_t msgbuf_clonefunc;
@@ -94,7 +94,7 @@ struct gnrmsg {
 	/*
 	 * msgtext should be a human-readable representation of the message
 	 * being routed.  If msgtexttype is not set, text/plain is assumed.
- 	 */
+	 */
 	char *msgtexttype;
 	char *msgtext;
 
