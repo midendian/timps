@@ -61,6 +61,7 @@ int naf_tlv_addu16(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_
 int naf_tlv_addu32(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_u32_t value);
 int naf_tlv_addtlv(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_tlv_t *tlv); /* renders it first */
 int naf_tlv_addtlvraw(struct nafmodule *mod, naf_tlv_t **desthead, naf_tlv_t *srctlv); /* clones first tlv in srctlv and adds, unrendered */
+int naf_tlv_append(struct nafmodule *mod, naf_tlv_t **head, naf_tlv_t *tlv);
 
 #endif /* __NAFTLV_H__ */
 

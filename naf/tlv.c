@@ -166,6 +166,25 @@ naf_tlv_t *naf_tlv_remove(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t typ
 	return NULL;
 }
 
+int naf_tlv_append(struct nafmodule *mod, naf_tlv_t **head, naf_tlv_t *tlv)
+{
+
+	if (!mod || !head || !tlv)
+		return -1;
+
+	if (!*head)
+		*head = tlv;
+	else {
+		naf_tlv_t *tcur;
+
+		for (tcur = *head; tcur->tlv_next; tcur = tcur->tlv_next)
+			;
+		tcur->tlv_next = tlv;
+	}
+
+	return 0;
+}
+
 int naf_tlv_addraw(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_u16_t length, const naf_u8_t *value)
 {
 	naf_tlv_t *tlv;
@@ -182,18 +201,10 @@ int naf_tlv_addraw(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, naf_
 		return -1;
 	}
 
-
-	if (!*head)
-		*head = tlv;
-	else {
-		naf_tlv_t *tcur;
-
-		for (tcur = *head; tcur->tlv_next; tcur = tcur->tlv_next)
-			;
-		tcur->tlv_next = tlv;
+	if (naf_tlv_append(mod, head, tlv) == -1) {
+		naf_tlv_free(mod, tlv);
+		return -1;
 	}
-
-
 	return 0;
 }
 
@@ -203,7 +214,7 @@ int naf_tlv_addtlvraw(struct nafmodule *mod, naf_tlv_t **desthead, naf_tlv_t *sr
 	if (!srctlv)
 		return -1;
 
-	return naf_tlv_addraw(mod, desthead, srctlv->tlv_type, srctlv->tlv_length, srctlv->tlv_value); 
+	return naf_tlv_addraw(mod, desthead, srctlv->tlv_type, srctlv->tlv_length, srctlv->tlv_value);
 }
 
 int naf_tlv_addstring(struct nafmodule *mod, naf_tlv_t **head, naf_u16_t type, const char *str)
