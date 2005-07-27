@@ -548,7 +548,12 @@ static char *stripwhite(char *string)
 	return s;
 }
 
-static void fullline(void)
+static void
+#ifdef NAF_OLDREADLINE
+fullline(void)
+#else
+fullline(char *notused)
+#endif
 {
 	char *stripped;
 
@@ -605,7 +610,7 @@ static int modinit(struct nafmodule *mod)
 	rl_initialize();
 	rl_attempted_completion_function = (CPPFunction *)cmdcomplete;
 
-	rl_callback_handler_install(nafconsole__prompt, &fullline);
+	rl_callback_handler_install(nafconsole__prompt, fullline);
 #if 0
 	rl_clear_signals();
 #endif
