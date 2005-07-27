@@ -50,6 +50,10 @@
 #include <naf/nafrpc.h>
 #include <naf/nafconfig.h>
 
+#ifdef NAF_OLDREADLINE
+#define rl_completion_matches completion_matches
+#endif
+
 static struct nafmodule *nafconsole__module = NULL;
 static char *nafconsole__prompt = NULL;
 #define NAFCONSOLE_DEBUG_DEFAULT 0
@@ -466,7 +470,7 @@ static int cmdexec(char *line, int depth)
 	return command->func(word);
 }
 
-static char *cmdgenerator(char *text, int state)
+static char *cmdgenerator(const char *text, int state)
 {
 	static int list_index, len, done;
 	static struct macro *mac;
@@ -523,7 +527,7 @@ static char **cmdcomplete(char *text, int start, int end)
 	if (start != 0)
 		return NULL;
 
-	return completion_matches(text, cmdgenerator);
+	return rl_completion_matches(text, cmdgenerator);
 }
 
 static char *stripwhite(char *string)

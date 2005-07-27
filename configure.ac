@@ -37,11 +37,18 @@ AC_CHECK_LIB(expat, XML_Parse,
 # this is all for the nafconsole module
 NAF_READLINELIBS=
 AC_CHECK_HEADERS(readline/readline.h readline/history.h)
-AC_CHECK_LIB(readline, rl_callback_handler_install,
+# GNU readline has rl_completion_matches, BSD readline has completion_matches
+AC_CHECK_LIB(readline, rl_completion_matches,
+	[rlhist="readline"],
+	AC_CHECK_LIB(readline, completion_matches,
+		[rlhist="readline"
+		 AC_DEFINE(NAF_OLDREADLINE, [], 1)],
+		[rlhist="none"]))
+if test "$rlhist" = "readline"; then
 	AC_CHECK_LIB(history, add_history,
 		[rlhist="both"],
-		[rlhist="readline"]),
-	[rlhist="none"])
+		[rlhist="readline"])
+fi
 if test "$rlhist" = "both"; then
 	NAF_READLINELIBS="-lcurses -lreadline -lhistory"
 	AC_DEFINE(NAF_USEREADLINE, 1, [Define if readline is available])
