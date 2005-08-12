@@ -14,10 +14,6 @@ case "$ac_cv_host" in
 		;;
 esac
 
-dnl this are only relevent for linking the core, not the plugins
-NAF_LDADD="\$(top_srcdir)/naf/libnaf.a \$(top_srcdir)/naf/ipv4/libnaf-ipv4.a \$(top_srcdir)/libmx/src/libmx.a"
-GNR_LDADD="\$(top_srcdir)/gnr/libgnr.a"
-
 dnl gcc3.x changed to C99, which has this lovely feature-bug that breaks NAF tags.
 CFLAGS="-fno-strict-aliasing"
 
@@ -25,10 +21,8 @@ AC_CHECK_LIB(nbio, nbio_init,
 	NBIO_LIBS="-lnbio",
 	AC_MSG_ERROR(unable to find libnbio)
 )
-AC_SUBST(NBIO_LIBS)
 
 dnl XXX this should use AC_DEFINE, not CFLAGS
-EXPAT_LIBS=
 EXPAT_CFLAGS=
 AC_CHECK_LIB(expat, XML_Parse,
 	EXPAT_LIBS="-lexpat",
@@ -78,10 +72,9 @@ fi
 
 AC_DEFINE(NAF_MEM_ENABLED, 1, [Define to use NAF memory debugging])
 
-AC_CHECK_LIB(dl, dlopen, NAF_LDADD="-ldl $NAF_LDADD")
-AC_SUBST(NAF_LDADD)
-AC_SUBST(GNR_LDADD)
+AC_CHECK_LIB(dl, dlopen, LIBS="-ldl $LIBS")
 
+AC_SUBST(NBIO_LIBS)
 AC_SUBST(EXPAT_LIBS)
 AC_SUBST(EXPAT_CFLAGS)
 
