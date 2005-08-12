@@ -35,6 +35,5 @@ libnaf_a_SOURCES = \
 	tlv.c
 
 libnaf_a_DEPENDENCIES = \
-	../libnbio/src/libnbio.a \
 	../libmx/src/libmx.a
 

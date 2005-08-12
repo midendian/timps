@@ -13,7 +13,6 @@ libgnr_a_SOURCES = \
 	node.h
 
 libgnr_a_DEPENDENCIES = \
-	../libnbio/src/libnbio.a \
 	../libmx/src/libmx.a \
 	../naf/libnaf.a
 
