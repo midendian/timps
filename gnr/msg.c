@@ -29,6 +29,10 @@
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#define GNR_MSG_PERF
+#endif
 
 #include <naf/nafmodule.h>
 #include <naf/nafrpc.h>
@@ -107,7 +111,7 @@ int gnr_msg_addmsghandler(struct nafmodule *mod, int stage, int position, gnrmsg
 
 	if (stage > GNR_MSG_MSGHANDLER_STAGE_MAX)
 		return -1;
-	
+
 	if ((position < GNR_MSG_MSGHANDLER_POS_MIN) ||
 			(position > GNR_MSG_MSGHANDLER_POS_MAX))
 		return -1;
@@ -251,7 +255,14 @@ int gnr_msg_route(struct nafmodule *srcmod, struct gnrmsg *gm)
 {
 	struct gnrmsg_handler_info gmhi;
 	struct mhlist *mh;
+#ifdef GNR_MSG_PERF
+	struct timeval tvin, tvout;
 
+	memset(&tvin, 0, sizeof(struct timeval));
+	memset(&tvout, 0, sizeof(struct timeval));
+
+	gettimeofday(&tvin, NULL);
+#endif
 	gmhi.srcmod = srcmod;
 	gmhi.destconn = NULL;
 	gmhi.targetmod = NULL;
@@ -262,7 +273,7 @@ int gnr_msg_route(struct nafmodule *srcmod, struct gnrmsg *gm)
 		dvprintf(gnr__module, "gnr_msg_route: invalid args (%p/%s[%s]/%s[%s])\n",
 				gm,
 				gm ? gm->srcname : NULL,
-				gm ? gm->srcnameservice : NULL, 
+				gm ? gm->srcnameservice : NULL,
 				gm ? gm->destname : NULL,
 				gm ? gm->destnameservice : NULL);
 		return -1;
@@ -302,13 +313,26 @@ int gnr_msg_route(struct nafmodule *srcmod, struct gnrmsg *gm)
 	/* And finally, output. */
 	if (gmhi.targetmod) {
 		gnrmsg_outputfunc_t outf = NULL;
-		
+
 		naf_module_tag_fetch(gnr__module, gmhi.targetmod, "module.gnrmsg_outputfunc", NULL, (void **)&outf);
-		
+
 		if (outf)
 			outf(gmhi.targetmod, gm, &gmhi);
 	}
- 
+
+#ifdef GNR_MSG_PERF
+	gettimeofday(&tvout, NULL);
+
+	if (gnr__debug > 0) {
+		struct timeval tv;
+		double el;
+
+		timersub(&tvout, &tvin, &tv);
+		el = (double)tv.tv_sec + ((double)tv.tv_usec / 1000000);
+		el *= 1000; /* milliseconds */
+		dvprintf(gnr__module, "gnr_msg_route: time elapsed since message input: %gms\n", el);
+	}
+#endif
 	return 0;
 }
 
