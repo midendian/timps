@@ -15,8 +15,8 @@ timpsd_LDFLAGS = -rdynamic
 timpsd_LDADD = \
 	oscar/libtimpsoscar.a \
 	../gnr/libgnr.a \
-	../libmx/src/libmx.a \
 	../naf/libnaf.a \
 	../naf/ipv4/libnaf-ipv4.a \
+	../libmx/src/libmx.a \
 	$(EXPAT_LIBS) \
 	$(NBIO_LIBS)

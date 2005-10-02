@@ -25,7 +25,8 @@ AC_CHECK_LIB(nbio, nbio_init,
 dnl XXX this should use AC_DEFINE, not CFLAGS
 EXPAT_CFLAGS=
 AC_CHECK_LIB(expat, XML_Parse,
-	EXPAT_LIBS="-lexpat",
+	[EXPAT_LIBS="-lexpat"
+	 EXPAT_CFLAGS="-DHAVE_EXPAT_H"],
 	EXPAT_CFLAGS="-DNOXML")
 
 dnl this is all for the nafconsole module
