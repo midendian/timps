@@ -72,7 +72,7 @@ static int httpd_debug = 0;
 #define SOAPCONN_STATE_INREQPAYLOAD 2
 #define SOAPCONN_STATE_PROCESSING   3
 
-/* 
+/*
  * In the PROCESSING state, we wouldn't generally need to be reading from
  * the client.  However, if the client closes their connection between the
  * time we stop reading the headers (or request payload) and the time we
@@ -304,6 +304,20 @@ static struct httpdpage *naf_httpd_page__find_hard(struct nafmodule *mod, const 
 	return NULL;
 }
 
+static struct httpdpage *naf_httpd_page__find_loose(struct nafmodule *mod, const char *fn)
+{
+	struct httpdpage *hp;
+
+	for (hp = naf_httpd__pages; hp; hp = hp->hp_next) {
+		if (hp->hp_flags & NAF_HTTPD_PAGEFLAGS_LOOSEMATCH) {
+			if (strncasecmp(fn, hp->hp_fn, strlen(hp->hp_fn)) == 0)
+				return hp;
+		}
+	}
+
+	return NULL;
+}
+
 int naf_httpd_page_register(struct nafmodule *theirmod, const char *fn, const char *contenttype, naf_httpd_pageflags_t flags, naf_httpd_pagehandler_t handler)
 {
 	struct httpdpage *hp;
@@ -397,23 +411,32 @@ static int send404(struct nafmodule *mod, struct nafconn *conn)
 	return 0;
 }
 
-static int dorequest_get(struct nafmodule *mod, struct nafconn *conn, const char *file)
+static int dorequest_get(struct nafmodule *mod, struct nafconn *conn, char *file)
 {
 	struct httpdpage *hp;
+	char *args = NULL;
+
+	if (strchr(file, '?')) {
+		args = strchr(file, '?');
+		*(args++) = '\0';
+	}
 
 	/* XXX if ends with /, fall back to looking for index.html, etc */
 	hp = naf_httpd_page__find_hard(mod, file);
 	if (!hp) {
-		if (httpd_debug > 0)
-			dvprintf(mod, "no registered handler for page '%s'\n", file);
-		return send404(mod, conn);
+		hp = naf_httpd_page__find_loose(mod, file);
+		if (!hp) {
+			if (httpd_debug > 0)
+				dvprintf(mod, "no handler matching page '%s'\n", file);
+			return send404(mod, conn);
+		}
 	}
 
 	if (!(hp->hp_flags & NAF_HTTPD_PAGEFLAGS_NOHEADERS)) {
 		char twoohoh[255];
 		char *hdr;
 
-		snprintf(twoohoh, sizeof(twoohoh), 
+		snprintf(twoohoh, sizeof(twoohoh),
 				"HTTP/1.0 200\r\n"
 				"Connection: Close\r\n"
 				"Content-Type: %s\r\n"
@@ -427,7 +450,7 @@ static int dorequest_get(struct nafmodule *mod, struct nafconn *conn, const char
 			return -1;
 		}
 	}
-	hp->hp_handler(hp->hp_owner, hp->hp_fn, hp->hp_flags, conn);
+	hp->hp_handler(hp->hp_owner, file, hp->hp_flags, args, conn);
 
 	if (!(hp->hp_flags & NAF_HTTPD_PAGEFLAGS_NOAUTOCLOSE))
 		naf_conn_schedulekill(conn);
@@ -611,7 +634,7 @@ static int addargs(struct nafmodule *mod, lmx_t *x, naf_rpc_arg_t *head)
 		 * into tag names here, but having XML tag names start with
 		 * numbers is technically illegal and makes many XML parsers
 		 * barf.  For example, the one used by SOAP::Lite.  Should
-		 * find a way around this.  
+		 * find a way around this.
 		 */
 		if (!(y = lmx_add(x, arg->name)))
 			continue;
@@ -970,12 +993,144 @@ static void freetag(struct nafmodule *mod, void *object, const char *tagname, ch
 	return;
 }
 
-static int modfirst(struct nafmodule *mod)
+static int
+sendbasicdata(struct nafmodule *mod, struct nafconn *conn, const char *format, ...)
+{
+	char *resp;
+	va_list ap;
+
+	/* XXX */
+	if (!(resp = naf_malloc_type(mod, NAF_MEM_TYPE_NETBUF, 1024)))
+		return -1;
+	va_start(ap, format);
+	vsnprintf(resp, 1024, format, ap);
+	va_end(ap);
+
+	if (naf_conn_reqwrite(conn, resp, strlen(resp)) == -1) {
+		naf_free(mod, resp);
+		return -1;
+	}
+	return 0;
+}
+
+static int
+nafrpc_page_handler(struct nafmodule *mod, const char *fn, naf_httpd_pageflags_t pageflags, const char *reqargs, struct nafconn *httpdconn)
+{
+	char module[64], method[64], *c, *c2;
+	naf_rpc_req_t *req;
+
+	fn += strlen("/nafrpc");
+	if ((fn[0] != '/') || !(c = strchr(fn + 1, '/'))) {
+		sendbasicdata(mod, httpdconn, "invalid url syntax (%s)", fn);
+		return 0;
+	}
+	c2 = c + strlen(c);
+	if (((c - fn) >= sizeof(module)) || ((c2 - c) >= sizeof(method))) {
+		sendbasicdata(mod, httpdconn, "invalid target specification (%s)", fn);
+		return 0;
+	}
+	memcpy(module, fn + 1, c - fn - 1); module[c - fn - 1] = '\0';
+	memcpy(method, c + 1, c2 - c - 1); method[c2 - c - 1] = '\0';
+
+	sendbasicdata(mod, httpdconn, "module='%s'<br/>method='%s'<br/>args='%s'<br/>", module, method, reqargs);
+
+	if (!(req = naf_rpc_request_new(mod, module, method))) {
+		sendbasicdata(mod, httpdconn, "<br/>unable to begin RPC request<br/>");
+		return 0;
+	}
+
+	while (reqargs && strlen(reqargs)) {
+		const char *name = reqargs;
+		char name2[128];
+		const char *value;
+		char value2[512];
+		const char *end;
+
+		if (!(end = strchr(name, '&')))
+			end = reqargs + strlen(reqargs);
+
+		if ((value = strchr(name, '=')) && (value < end))
+			value++;
+		else
+			value = end;
+
+		if ((value - reqargs) > sizeof(name2))
+			goto nextarg;
+		memcpy(name2, reqargs, value - reqargs);
+		name2[value - reqargs] = '\0';
+		if (name2[strlen(name2) - 1] == '=')
+			name2[strlen(name2) - 1] = '\0';
+		if ((end - value) > sizeof(value2))
+			goto nextarg;
+		memcpy(value2, value, end - value);
+		value2[end - value] = '\0';
+
+		sendbasicdata(mod, httpdconn, "argument: name='%s', value='%s'<br/>", name2, value2);
+
+nextarg:	/* go next argument */
+		if (strlen(reqargs))
+			reqargs++;
+		if ((reqargs = strchr(reqargs, '&')))
+			reqargs++;
+	}
+
+
+	if (naf_rpc_request_issue(mod, req) == -1) {
+		sendbasicdata(mod, httpdconn, "<br/>unable to issue RPC request<br/>");
+		naf_rpc_request_free(mod, req);
+		return 0;
+	}
+
+	{
+		const char *code = "Unknown response code";
+		if (req->status == NAF_RPC_STATUS_SUCCESS)
+			code = "Success";
+		else if (req->status == NAF_RPC_STATUS_UNKNOWNFAILURE)
+			code = "Unknown failure";
+		else if (req->status == NAF_RPC_STATUS_UNKNOWNTARGET)
+			code = "Unknown module";
+		else if (req->status == NAF_RPC_STATUS_UNKNOWNMETHOD)
+			code = "Unknown method";
+		else if (req->status == NAF_RPC_STATUS_PENDING)
+			code = "Request pending";
+
+		sendbasicdata(mod, httpdconn, "<br/><b>%s</b> (0x%04x)<br/>",
+			      code, req->status);
+
+		/* XXX send back return values */
+	}
+
+	naf_rpc_request_free(mod, req);
+
+	return 0;
+}
+
+static int modinit(struct nafmodule *mod)
 {
 
 	ourmodule = mod;
 
+	naf_httpd_page_register(mod, "/nafrpc", "text/html", NAF_HTTPD_PAGEFLAGS_LOOSEMATCH, nafrpc_page_handler);
+
+	return 0;
+}
+
+static int modshutdown(struct nafmodule *mod)
+{
+
+	naf_httpd_page_unregister(mod, "/nafrpc");
+
+	ourmodule = NULL;
+
+	return 0;
+}
+
+static int modfirst(struct nafmodule *mod)
+{
+
 	naf_module_setname(mod, "httpd");
+	mod->init = modinit;
+	mod->shutdown = modshutdown;
 	mod->takeconn = takeconn;
 	mod->connready = connready;
 	mod->connkill = connkill;
@@ -989,6 +1144,7 @@ static int modfirst(struct nafmodule *mod)
 int naf_httpd__register(void)
 {
 #ifdef NOXML
+#error foo
 	return 0;
 #else
 	return naf_module__registerresident("httpd", modfirst, NAF_MODULE_PRI_THIRDPASS);
