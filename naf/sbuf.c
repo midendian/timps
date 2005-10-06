@@ -275,6 +275,25 @@ char *naf_sbuf_getstr(struct nafmodule *mod, naf_sbuf_t *sbuf, naf_u16_t len)
 
 }
 
+char *naf_sbuf_getcstr(struct nafmodule *mod, naf_sbuf_t *sbuf, naf_u16_t maxlen)
+{
+	int n, p0;
+	char *str;
+
+	for (n = 0, p0 = naf_sbuf_getpos(sbuf);
+	     (((p0 + n) < sbuf->sbuf_buflen) &&
+	       (sbuf->sbuf_buf[p0 + n] != '\0') &&
+	       ((maxlen == 0) || (n < maxlen)));
+	     n++)
+		;
+
+	str = naf_sbuf_getstr(mod, sbuf, n);
+	if (!str)
+		return NULL;
+	naf_sbuf_advance(sbuf, 1); /* pass the null */
+	return str;
+}
+
 int naf_sbuf_putraw(naf_sbuf_t *sbuf, const naf_u8_t *inbuf, int inbuflen)
 {
 
@@ -295,6 +314,15 @@ int naf_sbuf_putstr(naf_sbuf_t *sbuf, const char *instr)
 		return 0;
 
 	return naf_sbuf_putraw(sbuf, (const naf_u8_t *)instr, strlen(instr));
+}
+
+int naf_sbuf_putcstr(naf_sbuf_t *sbuf, const char *instr)
+{
+
+	if (!sbuf || !instr)
+		return 0;
+
+	return naf_sbuf_putraw(sbuf, (const naf_u8_t *)instr, strlen(instr) + 1);
 }
 
 int naf_sbuf_cmp(naf_sbuf_t *sbuf, const naf_u8_t *cmpbuf, int cmpbuflen)

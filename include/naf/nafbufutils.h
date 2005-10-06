@@ -87,12 +87,14 @@ naf_u32_t naf_sbuf_get32(naf_sbuf_t *sbuf);
 int naf_sbuf_getrawbuf(naf_sbuf_t *sbuf, naf_u8_t *outbuf, naf_u16_t len);
 naf_u8_t *naf_sbuf_getraw(struct nafmodule *mod, naf_sbuf_t *sbuf, naf_u16_t len);
 char *naf_sbuf_getstr(struct nafmodule *mod, naf_sbuf_t *sbuf, naf_u16_t len);
+char *naf_sbuf_getcstr(struct nafmodule *mod, naf_sbuf_t *sbuf, naf_u16_t maxlen);
 
 int naf_sbuf_put8(naf_sbuf_t *sbuf, naf_u8_t v);
 int naf_sbuf_put16(naf_sbuf_t *sbuf, naf_u16_t v);
 int naf_sbuf_put32(naf_sbuf_t *sbuf, naf_u32_t v);
 int naf_sbuf_putraw(naf_sbuf_t *sbuf, const naf_u8_t *inbuf, int inbuflen);
 int naf_sbuf_putstr(naf_sbuf_t *sbuf, const char *instr);
+int naf_sbuf_putcstr(naf_sbuf_t *sbuf, const char *instr);
 
 int naf_sbuf_cmp(naf_sbuf_t *sbuf, const naf_u8_t *cmpbuf, int cmpbuflen);
 
