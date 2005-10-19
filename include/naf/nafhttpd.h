@@ -42,7 +42,10 @@ typedef int (*naf_httpd_pagehandler_t)(struct nafmodule *theirmod, const char *f
 
 int naf_httpd_page_register(struct nafmodule *theirmod, const char *fn, const char *contenttype, naf_httpd_pageflags_t flags, naf_httpd_pagehandler_t handler);
 int naf_httpd_page_unregister(struct nafmodule *theirmod, const char *fn);
+
+#ifndef NOXML
 int naf_httpd_sendlmx(struct nafmodule *theirmod, struct nafconn *conn, lmx_t *lmx);
+#endif
 
 #endif /* __NAFHTTPD_H__ */
 

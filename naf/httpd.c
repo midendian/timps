@@ -39,8 +39,6 @@
 #endif
 #endif
 
-#ifndef NOXML
-
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -55,7 +53,9 @@
 #include <naf/nafrpc.h>
 #include <naf/nafhttpd.h>
 
-#include <libmx.h> /* Sadly, the entire point is XML. */
+#ifndef NOXML
+#include <libmx.h>
+#endif
 
 #include "module.h" /* for naf_module__registerresident() only */
 
@@ -87,7 +87,7 @@ static int reqmonitorbuf(struct nafmodule *mod, struct nafconn *conn)
 
 	if (!(nbuf = naf_malloc_type(mod, NAF_MEM_TYPE_NETBUF, SOAPMONBUFLEN)))
 		return -1;
-	if (naf_conn_reqread(conn, nbuf, SOAPMONBUFLEN, 0) == -1) {
+	if (naf_conn_reqread(conn, (naf_u8_t *)nbuf, SOAPMONBUFLEN, 0) == -1) {
 		naf_free(mod, nbuf);
 		return -1;
 	}
@@ -103,7 +103,7 @@ static int reqsoapbuf(struct nafmodule *mod, struct nafconn *conn, char *inbuf)
 		if (!(nbuf = naf_malloc_type(mod, NAF_MEM_TYPE_NETBUF, SOAPBUFLEN)))
 			return -1;
 	}
-	if (naf_conn_reqread(conn, inbuf ? inbuf : nbuf, SOAPBUFLEN, 0) == -1) {
+	if (naf_conn_reqread(conn, (naf_u8_t *)(inbuf ? inbuf : nbuf), SOAPBUFLEN, 0) == -1) {
 		naf_free(mod, nbuf);
 		return -1;
 	}
@@ -124,7 +124,7 @@ static int takeconn(struct nafmodule *mod, struct nafconn *conn)
 
 	conn->state = SOAPCONN_STATE_FRESH;
 
-	if ((naf_conn_setdelim(mod, conn, "\r\n", 2) == -1) ||
+	if ((naf_conn_setdelim(mod, conn, (naf_u8_t *)"\r\n", 2) == -1) ||
 			(reqsoapbuf(mod, conn, NULL) == -1)) {
 		return -1;
 	}
@@ -356,6 +356,7 @@ int naf_httpd_page_unregister(struct nafmodule *theirmod, const char *fn)
 	return -1; /* not registered */
 }
 
+#ifndef NOXML
 int naf_httpd_sendlmx(struct nafmodule *theirmod, struct nafconn *conn, lmx_t *lmx)
 {
 	char *str, *str2;
@@ -377,6 +378,7 @@ int naf_httpd_sendlmx(struct nafmodule *theirmod, struct nafconn *conn, lmx_t *l
 
 	return 0;
 }
+#endif
 
 #define GENERIC404 { \
 	"HTTP/1.0 404 Not Found\r\n" \
@@ -401,7 +403,7 @@ static int send404(struct nafmodule *mod, struct nafconn *conn)
 	if (!(reply = naf_strdup_type(mod, NAF_MEM_TYPE_NETBUF, err404)))
 		return -1;
 
-	if (naf_conn_reqwrite(conn, reply, strlen(reply)) == -1) {
+	if (naf_conn_reqwrite(conn, (naf_u8_t *)reply, strlen(reply)) == -1) {
 		naf_free(mod, reply);
 		return -1;
 	}
@@ -445,7 +447,7 @@ static int dorequest_get(struct nafmodule *mod, struct nafconn *conn, char *file
 		if (!(hdr = naf_strdup_type(mod, NAF_MEM_TYPE_NETBUF, twoohoh)))
 			return -1;
 
-		if (naf_conn_reqwrite(conn, hdr, strlen(hdr)) == -1) {
+		if (naf_conn_reqwrite(conn, (naf_u8_t *)hdr, strlen(hdr)) == -1) {
 			naf_free(mod, hdr);
 			return -1;
 		}
@@ -457,6 +459,8 @@ static int dorequest_get(struct nafmodule *mod, struct nafconn *conn, char *file
 
 	return 0;
 }
+
+#ifndef NOXML
 
 struct handlenafrpcinfo {
 	struct nafmodule *mod;
@@ -816,12 +820,15 @@ errout:
 		naf_rpc_request_free(mod, req);
 	return -1;
 }
+#endif /* ndef NOXML */
 
 static int dorequest_post(struct nafmodule *mod, struct nafconn *conn, const char *file, unsigned char *reqpayload, int reqpayloadlen)
 {
 
+#ifndef NOXML
 	if (strcasecmp(file, "/nafrpc") == 0)
 		return handlenafrpc(mod, conn, reqpayload, reqpayloadlen);
+#endif
 
 	return send404(mod, conn);
 }
@@ -873,7 +880,7 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 
 		if (conn->state == SOAPCONN_STATE_FRESH) {
 
-			if (handlefirstreqline(mod, conn, buf) == -1) {
+			if (handlefirstreqline(mod, conn, (char *)buf) == -1) {
 				naf_free(mod, buf);
 				/* XXX probably should issue HTTP error */
 				return -1;
@@ -881,7 +888,7 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 
 			conn->state = SOAPCONN_STATE_INHEADERS;
 
-			if (reqsoapbuf(mod, conn, buf) == -1) {
+			if (reqsoapbuf(mod, conn, (char *)buf) == -1) {
 				naf_free(mod, buf);
 				return -1;
 			}
@@ -890,7 +897,7 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 
 		} else if (conn->state == SOAPCONN_STATE_INHEADERS) {
 
-			if (strlen(buf) == 0) { /* headers end with blank line */
+			if (strlen((char *)buf) == 0) { /* headers end with blank line */
 				int clen = -1;
 
 				naf_conn_tag_fetch(mod, conn, "conn.httpheader.content-length", NULL, (void **)&clen);
@@ -923,12 +930,12 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 
 			} else { /* header line */
 
-				if (handleheaderline(mod, conn, buf) == -1) {
+				if (handleheaderline(mod, conn, (char *)buf) == -1) {
 					naf_free(mod, buf);
 					return -1; /* XXX HTTP error */
 				}
 
-				if (reqsoapbuf(mod, conn, buf) == -1) {
+				if (reqsoapbuf(mod, conn, (char *)buf) == -1) {
 					naf_free(mod, buf);
 					return -1;
 				}
@@ -1006,7 +1013,7 @@ sendbasicdata(struct nafmodule *mod, struct nafconn *conn, const char *format, .
 	vsnprintf(resp, 1024, format, ap);
 	va_end(ap);
 
-	if (naf_conn_reqwrite(conn, resp, strlen(resp)) == -1) {
+	if (naf_conn_reqwrite(conn, (naf_u8_t *)resp, strlen(resp)) == -1) {
 		naf_free(mod, resp);
 		return -1;
 	}
@@ -1139,15 +1146,8 @@ static int modfirst(struct nafmodule *mod)
 	return 0;
 }
 
-#endif /* ndef NOXML */
-
 int naf_httpd__register(void)
 {
-#ifdef NOXML
-#error foo
-	return 0;
-#else
 	return naf_module__registerresident("httpd", modfirst, NAF_MODULE_PRI_THIRDPASS);
-#endif
 }
 
