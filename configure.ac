@@ -29,6 +29,13 @@ AC_CHECK_LIB(expat, XML_Parse,
 	 EXPAT_CFLAGS="-DHAVE_EXPAT_H"],
 	EXPAT_CFLAGS="-DNOXML")
 
+WBXML_LIBS=
+AC_CHECK_LIB(wbxml2, wbxml_conv_xml2wbxml,
+	[WBXML_LIBS="-lwbxml2"
+	 AC_DEFINE(HAVE_WBXML2, 1, [Define if libwbxml2 is available])],
+	[])
+AC_SUBST(WBXML_LIBS)
+
 dnl this is all for the nafconsole module
 NAF_READLINELIBS=
 AC_CHECK_HEADERS(readline/readline.h readline/history.h)
