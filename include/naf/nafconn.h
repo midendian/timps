@@ -73,6 +73,7 @@
 #define NAF_CONN_TYPE_DSR         0x00000400 /* plugins/abbscs/ */
 #define NAF_CONN_TYPE_SOAP        0x00000800 /* src/soap.c (http) */
 #define NAF_CONN_TYPE_SSH         0x00001000 /* src/ssh/ */
+#define NAF_CONN_TYPE_SMPP        0x00002000
 
 /* Endpoint connection mechanism (exactly one of these) */
 #define NAF_CONN_TYPE_SOCKS       0x00010000 /* Connected using SOCKS */
