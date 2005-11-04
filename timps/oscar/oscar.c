@@ -73,7 +73,7 @@ toscar_msgrouting(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct gn
 	/* If the source is local and one of ours, take it. */
 	if ((gmhi->srcnode->metric == GNR_NODE_METRIC_LOCAL) &&
 					(gmhi->srcnode->ownermod == mod)) {
-		gm->routeflags |= GNR_MSG_ROUTEFLAG_ROUTED_FORWARD; 
+		gm->routeflags |= GNR_MSG_ROUTEFLAG_ROUTED_FORWARD;
 		return 1;
 	}
 
