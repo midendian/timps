@@ -435,19 +435,25 @@ toscar_flap_handlewrite(struct nafmodule *mod, struct nafconn *conn)
 }
 
 
+struct findconn_info {
+	const char *sn;
+	naf_u32_t conntypemask;
+};
+
 static int
 toscar__findconn__matcher(struct nafmodule *mod, struct nafconn *conn, const void *udata)
 {
-	const char *sn = (const char *)udata;
+	struct findconn_info *fci = (struct findconn_info *)udata;
 	char *cursn = NULL;
 
 	if (!(conn->type & NAF_CONN_TYPE_SERVER))
 		return 0;
+	if (!((conn->type & fci->conntypemask) == fci->conntypemask))
+		return 0;
 
 	if ((naf_conn_tag_fetch(mod, conn, "conn.screenname", NULL, (void **)&cursn) == -1) || !cursn)
 		return 0;
-
-	if (toscar_sncmp(sn, cursn) != 0)
+	if (toscar_sncmp(fci->sn, cursn) != 0)
 		return 0;
 
 	return 1; /* found it */
@@ -455,9 +461,13 @@ toscar__findconn__matcher(struct nafmodule *mod, struct nafconn *conn, const voi
 
 /* !!! Avoid using this. */
 struct nafconn *
-toscar__findconn(struct nafmodule *mod, const char *sn)
+toscar__findconn(struct nafmodule *mod, const char *sn, naf_u32_t conntypemask)
 {
-	return naf_conn_find(mod, toscar__findconn__matcher, (void *)sn);
+	struct findconn_info fci;
+
+	fci.sn = sn;
+	fci.conntypemask = conntypemask;
+	return naf_conn_find(mod, toscar__findconn__matcher, &fci);
 }
 
 
