@@ -166,12 +166,8 @@ toscar_snachandler_0001_0002(struct nafmodule *mod, struct nafconn *conn, struct
 		/*
 		 * Disconnect any old server connections for this user. AIM
 		 * used to do this automatically, but they fixed the glitch.
-		 *
-		 * XXX this was a quick hack for preed; fix for real -mid
 		 */
-		struct nafconn *oconn;
-		if ((oconn = toscar__findconn(mod, sn, NAF_CONN_TYPE_PROROGUEDEATH)))
-			naf_conn_schedulekill(oconn);
+		toscar__detacholdconns(mod, sn);
 	}
 
 	node = gnr_node_online(mod, sn, OSCARSERVICE,

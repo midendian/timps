@@ -120,7 +120,7 @@ toscar_gnroutputfunc(struct nafmodule *mod, struct gnrmsg *gm, struct gnrmsg_han
 	if (gmhi->destnode->metric == GNR_NODE_METRIC_LOCAL) {
 		struct nafconn *conn;
 
-		if (!(conn = toscar__findconn(mod, gmhi->destnode->name, 0))) {
+		if (!(conn = toscar__findconn(mod, gmhi->destnode->name))) {
 			if (timps_oscar__debug > 0)
 				dvprintf(mod, "gnroutputfunc(local): unable to find connection for local node '%s'[%s]\n", gmhi->destnode->name, gmhi->destnode->service);
 			return -1;
@@ -131,7 +131,7 @@ toscar_gnroutputfunc(struct nafmodule *mod, struct gnrmsg *gm, struct gnrmsg_han
 	} else if (gmhi->srcnode->metric == GNR_NODE_METRIC_LOCAL) {
 		struct nafconn *conn;
 
-		if (!(conn = toscar__findconn(mod, gmhi->srcnode->name, 0))) {
+		if (!(conn = toscar__findconn(mod, gmhi->srcnode->name))) {
 			if (timps_oscar__debug > 0)
 				dvprintf(mod, "gnroutputfunc(forward): unable to find connection for local node '%s'[%s]\n", gmhi->srcnode->name, gmhi->srcnode->service);
 			return -1;
