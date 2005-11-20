@@ -459,6 +459,43 @@ toscar__findconn(struct nafmodule *mod, const char *sn)
 	return naf_conn_find(mod, toscar__findconn__matcher, (void *)sn);
 }
 
+struct userhasotherclient_info {
+	const char *sn;
+	struct nafconn *conn;
+};
+
+static int
+toscar__userhasotherclient__matcher(struct nafmodule *mod, struct nafconn *conn, const void *udata)
+{
+	struct userhasotherclient_info *uhoci = (struct userhasotherclient_info *)udata;
+	char *cursn = NULL;
+
+	if (!(conn->type & NAF_CONN_TYPE_SERVER))
+		return 0;
+	if (conn == uhoci->conn)
+		return 0; /* this connection is dying, ignoring it */
+
+	if ((naf_conn_tag_fetch(mod, conn, "conn.screenname", NULL, (void **)&cursn) == -1) || !cursn)
+		return 0;
+	if (toscar_sncmp(uhoci->sn, cursn) != 0)
+		return 0;
+	if (!conn->endpoint)
+		return 0; /* doesn't have a client */
+
+	return 1; /* found one */
+}
+
+/* !!! Avoid using this. */
+int
+toscar__userhasotherclient(struct nafmodule *mod, const char *sn, struct nafconn *conn)
+{
+	struct userhasotherclient_info uhoci;
+
+	uhoci.sn = sn;
+	uhoci.conn = conn; /* server connection */
+	return !!naf_conn_find(mod, toscar__userhasotherclient__matcher, &uhoci);
+}
+
 static int
 toscar__detacholdconns__matcher(struct nafmodule *mod, struct nafconn *conn, const void *udata)
 {
@@ -475,7 +512,12 @@ toscar__detacholdconns__matcher(struct nafmodule *mod, struct nafconn *conn, con
 	if (toscar_sncmp(sn, cursn) != 0)
 		return 0;
 
+	if (timps_oscar__debug) {
+		dvprintf(mod, "disconnecting old server connection %lu for '%s'\n", conn->cid, cursn);
+	}
+
 	naf_conn_schedulekill(conn);
+
 	return 0; /* keep going */
 }
 

@@ -154,9 +154,11 @@ freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, 
 		; /* an int */
 	else if (strcmp(tagname, "conn.screenname") == 0) {
 		char *sn = (char *)tagdata;
+		struct nafconn *conn = (struct nafconn *)object;
 		struct gnrnode *node;
 
-		if ((node = gnr_node_findbyname(sn, OSCARSERVICE)))
+		if ((node = gnr_node_findbyname(sn, OSCARSERVICE)) &&
+				!toscar__userhasotherclient(mod, sn, conn))
 			gnr_node_offline(node, GNR_NODE_OFFLINE_REASON_DISCONNECTED);
 
 		naf_free(mod, sn);
