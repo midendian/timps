@@ -790,7 +790,7 @@ char *naf_conn_getlocaladdrstr(struct nafmodule *mod, struct nafconn *conn)
 	char *ip, *ret = NULL;
 	int port = -1;
 
-	if ((ip = naf_config_getmodparmstr(mod, "extipaddr")) && strlen(ip))
+	if ((ip = naf_config_getmodparmstr(ourmodule, "extipaddr")) && strlen(ip))
 		ret = naf_strdup(mod, ip);
 	else
 		ret = naf_strdup(mod, inet_ntoa(((struct sockaddr_in *)&conn->localendpoint)->sin_addr));
@@ -805,7 +805,7 @@ char *naf_conn_getlocaladdrstr(struct nafmodule *mod, struct nafconn *conn)
 	/*
 	 * If we don't have a port, figure one out...
 	 */
-	if (!strchr(ret, ':')) { 
+	if (!strchr(ret, ':')) {
 		char *newip;
 
 		if ((newip = naf_malloc(mod, strlen(ret)+1+strlen("65535")+1))) {
