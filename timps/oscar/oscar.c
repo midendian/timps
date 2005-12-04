@@ -55,7 +55,7 @@ struct nafmodule *timps_oscar__module = NULL;
 #define TIMPS_OSCAR_AUTHORIZER_DEFAULT "login.oscar.aol.com:5190"
 char *timps_oscar__authorizer = NULL;
 #define TIMPS_OSCAR_ENABLEPROROGUEALL_DEFAULT 0
-int timps_oscar__enableprorogueall = TIMPS_OSCAR_ENABLEPROROGUEALL;
+int timps_oscar__enableprorogueall = TIMPS_OSCAR_ENABLEPROROGUEALL_DEFAULT;
 
 static int
 toscar_msgrouting(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
