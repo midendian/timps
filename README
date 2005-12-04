@@ -108,6 +108,8 @@ debug=10
 ; if you're using aimdlite for testing
 ;authorizer=localhost:6190
 ; default is login.oscar.aol.com:5190
+; prorogueall will cause server connections to stay open even if client dies
+;enableprorogueall=yes
 
 [module=logging]
 ; this is the low-level logging module (in NAF) -- it does not see IMs
