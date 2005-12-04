@@ -183,7 +183,7 @@ toscar_flap_prepareconn(struct nafmodule *mod, struct nafconn *conn)
 {
 
 	if (timps_oscar__enableprorogueall)
-		conn->type |= NAF_CONN_TYPE_PROROGUE;
+		conn->type |= NAF_CONN_TYPE_PROROGUEDEATH;
 
 	if (conn->type & NAF_CONN_TYPE_CLIENT) { /* act like a server */
 		if (toscar_flap__sendflapversion(mod, conn) == -1)
