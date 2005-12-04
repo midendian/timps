@@ -31,6 +31,7 @@
 extern int timps_oscar__debug;
 extern struct nafmodule *timps_oscar__module;
 extern char *timps_oscar__authorizer;
+extern int timps_oscar__enableprorogueall;
 
 #define TIMPS_OSCAR_DEFAULTPORT 5190
 
