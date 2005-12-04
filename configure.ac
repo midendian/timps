@@ -1,6 +1,6 @@
 AC_INIT(naf/daemon.c)
 AM_CONFIG_HEADER(include/config.h)
-AM_INIT_AUTOMAKE(timps, 0.20)
+AM_INIT_AUTOMAKE(timps, 0.25)
 
 AM_MAINTAINER_MODE
 
