@@ -386,9 +386,10 @@ toscar_snachandler_0004_0006(struct nafmodule *mod, struct nafconn *conn, struct
 
 
 out:
-	if (gm)
+	if (gm) {
 		naf_free(mod, gm->msgtext);
-	gnr_msg_free(mod, gm);
+		gnr_msg_free(mod, gm);
+	}
 	naf_tlv_free(mod, tlvh);
 	naf_free(mod, destsn);
 	naf_free(mod, msgck);
