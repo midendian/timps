@@ -455,11 +455,27 @@ toscar__findconn__matcher(struct nafmodule *mod, struct nafconn *conn, const voi
 	return 1; /* found it */
 }
 
-/* !!! Avoid using this. */
+/*
+ * !!! Avoid using this, in its current state.  To be suitable for larger
+ * installations, this needs some accounting added so it's less than O(n).
+ */
 struct nafconn *
 toscar__findconn(struct nafmodule *mod, const char *sn)
 {
 	return naf_conn_find(mod, toscar__findconn__matcher, (void *)sn);
+}
+
+int
+toscar__force_disconnect(struct nafmodule *mod, const char *sn)
+{
+	struct nafconn *conn;
+
+	if (!(conn = toscar__findconn(mod, sn)))
+		return -1;
+
+	naf_conn_schedulekill(conn);
+
+	return 0;
 }
 
 struct userhasotherclient_info {

@@ -38,6 +38,7 @@
 
 #include <naf/nafmodule.h>
 #include <naf/nafconfig.h>
+#include <naf/nafrpc.h>
 #include <gnr/gnrmsg.h>
 #include <gnr/gnrnode.h>
 #include <naf/naftlv.h>
@@ -220,6 +221,31 @@ connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what)
 	return 0;
 }
 
+/*
+ * oscar->disconnectuser()
+ * IN:
+ *    string sn;
+ *
+ * OUT:
+ *    None.
+ */
+static void __rpc_oscar_disconnectuser(struct nafmodule *mod, naf_rpc_req_t *req)
+{
+	naf_rpc_arg_t *name;
+
+	name = naf_rpc_getarg(req->inargs, "sn");
+
+	if (!name || (name->type != NAF_RPC_ARGTYPE_STRING)) {
+		req->status = NAF_RPC_STATUS_INVALIDARGS;
+		return;
+	}
+
+	req->status = NAF_RPC_STATUS_UNKNOWNFAILURE;
+	if (toscar__force_disconnect(mod, name->data.string) != -1)
+		req->status = NAF_RPC_STATUS_SUCCESS;
+
+	return;
+}
 
 static int
 modinit(struct nafmodule *mod)
@@ -233,12 +259,15 @@ modinit(struct nafmodule *mod)
 	}
 	gnr_msg_addmsghandler(mod, GNR_MSG_MSGHANDLER_STAGE_ROUTING, 75, toscar_msgrouting, "Route AIM/OSCAR messages");
 
+	naf_rpc_register_method(mod, "disconnectuser", __rpc_oscar_disconnectuser, "Forcefully disconnect an OSCAR user");
+
 	return 0;
 }
 
 static int
 modshutdown(struct nafmodule *mod)
 {
+	naf_rpc_unregister_method(mod, "disconnectuser");
 
 	gnr_msg_remmsghandler(mod, GNR_MSG_MSGHANDLER_STAGE_ROUTING, toscar_msgrouting);
 	gnr_msg_unregister(mod);
