@@ -609,6 +609,7 @@ struct nafconn *naf_conn_addconn(struct nafmodule *mod, nbio_sockfd_t fd, naf_u3
 
 	newconn->lastrx = time(NULL);
 	newconn->lastrx2 = 0;
+	newconn->lasttx_soft = newconn->lasttx_hard = 0;
 
 	newconn->state = 0;
 
@@ -689,6 +690,7 @@ int naf_conn_reqwrite(struct nafconn *conn, unsigned char *buf, int buflen)
 	if (naf_conn__debug > 2)
 		dumpbox(ourmodule, "out", conn->cid, buf, buflen);
 
+	conn->lasttx_soft = time(NULL);
 	return nbio_addtxvector(&gnb, conn->fdt, buf, buflen);
 }
 
@@ -723,7 +725,11 @@ int naf_conn_takewrite(struct nafconn *conn, unsigned char **bufp, int *buflenp)
 	if (naf_conn__debug > 2)
 		dumpbox(ourmodule, "backout", conn->cid, *bufp, *buflenp);
 
-	return *bufp ? *buflenp : -1;
+	if (!*bufp)
+		return -1;
+
+	conn->lasttx_hard = time(NULL);
+	return *buflenp;
 }
 
 int naf_conn_setdelim(struct nafmodule *mod, struct nafconn *conn, const unsigned char *delim, const unsigned char delimlen)

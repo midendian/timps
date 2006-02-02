@@ -41,6 +41,7 @@ int toscar__userhasotherclient(struct nafmodule *mod, const char *sn, struct naf
 
 int toscar__force_disconnect(struct nafmodule *mod, const char *sn);
 
+int toscar_flap_sendnop(struct nafmodule *mod, struct nafconn *conn);
 int toscar_flap_sendconnclose(struct nafmodule *mod, struct nafconn *conn, naf_u16_t reason, const char *reasonurl);
 int toscar_flap_puthdr(naf_sbuf_t *sb, naf_u8_t chan);
 int toscar_flap_sendsbuf_consume(struct nafmodule *mod, struct nafconn *conn, naf_sbuf_t *sb);

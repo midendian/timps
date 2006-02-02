@@ -57,6 +57,10 @@ struct nafmodule *timps_oscar__module = NULL;
 char *timps_oscar__authorizer = NULL;
 #define TIMPS_OSCAR_ENABLEPROROGUEALL_DEFAULT 0
 int timps_oscar__enableprorogueall = TIMPS_OSCAR_ENABLEPROROGUEALL_DEFAULT;
+#define TIMPS_OSCAR_KEEPALIVE_FREQUENCY_DEFAULT 15
+int timps_oscar__keepalive_frequency = TIMPS_OSCAR_KEEPALIVE_FREQUENCY_DEFAULT;
+#define TIMPS_OSCAR_TXTIMEOUT_DEFAULT 30
+int timps_oscar__txtimeout = TIMPS_OSCAR_TXTIMEOUT_DEFAULT;
 
 static int
 toscar_msgrouting(struct nafmodule *mod, int stage, struct gnrmsg *gm, struct gnrmsg_handler_info *gmhi)
@@ -294,9 +298,55 @@ signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
 		NAFCONFIG_UPDATEBOOLMODPARMDEF(mod, "enableprorogueall",
 					       timps_oscar__enableprorogueall,
 					       TIMPS_OSCAR_ENABLEPROROGUEALL_DEFAULT);
+
+		NAFCONFIG_UPDATEINTMODPARMDEF(mod, "keepalivefrequency",
+					      timps_oscar__keepalive_frequency,
+					      TIMPS_OSCAR_KEEPALIVE_FREQUENCY_DEFAULT);
+
+		NAFCONFIG_UPDATEINTMODPARMDEF(mod, "txtimeout",
+					      timps_oscar__txtimeout,
+					      TIMPS_OSCAR_TXTIMEOUT_DEFAULT);
+
 	}
 
 	return;
+}
+
+static int
+toscar__keepalive_matcher(struct nafmodule *mod, struct nafconn *conn, const void *ud)
+{
+	const time_t now = (time_t)ud;
+
+	if (!(conn->type & NAF_CONN_TYPE_FLAP) ||
+	    !(conn->type & NAF_CONN_TYPE_SERVER))
+		return 0;
+
+	if ((now - conn->lasttx_soft) > timps_oscar__keepalive_frequency) {
+		if (timps_oscar__debug > 1) {
+			dvprintf(mod, "[%lu] sending nop (%d seconds since last tx)\n",
+				 conn->cid,
+				 now - conn->lasttx_soft);
+		}
+		toscar_flap_sendnop(mod, conn);
+	}
+
+	/*
+	 * This closes connections that are 'stuck', at the TCP level.  If a
+	 * host doesn't ack our data (to let us send our queue) for more than
+	 * thirty seconds (default), then consider the connection dead. This
+	 * can occur for a variety of reasons, most of them not good.
+	 *
+	 * The check above makes sure there's always pending data at least
+	 * this often.
+	 */
+	if ((now - conn->lasttx_hard) > timps_oscar__txtimeout) {
+		dvprintf(mod, "[%lu] connection timed out, closing (%d seconds since last hard tx)\n",
+			 conn->cid,
+			 now - conn->lasttx_hard);
+		naf_conn_schedulekill(conn);
+	}
+
+	return 0;
 }
 
 static void
@@ -307,6 +357,7 @@ timerhandler(struct nafmodule *mod)
 	now = time(NULL);
 
 	toscar_ckcache_timer(mod, now);
+	naf_conn_find(mod, toscar__keepalive_matcher, (void *)now);
 
 	return;
 }

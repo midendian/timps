@@ -104,6 +104,8 @@ struct nafconn {
 	naf_u32_t flags;
 	time_t lastrx; /* only used for connection type assumptions */
 	time_t lastrx2; /* used for timing out the RAWWAITING condition */
+	time_t lasttx_soft; /* last write queued */
+	time_t lasttx_hard; /* last write sent */
 
 	struct nafconn *endpoint;
 

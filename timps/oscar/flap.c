@@ -179,6 +179,25 @@ toscar_flap_sendconnclose(struct nafmodule *mod, struct nafconn *conn, naf_u16_t
 }
 
 int
+toscar_flap_sendnop(struct nafmodule *mod, struct nafconn *conn)
+{
+	naf_sbuf_t sb;
+
+	if (naf_sbuf_init(mod, &sb, NULL, 0) == -1)
+		return -1;
+
+	toscar_flap_puthdr(&sb, 0x05); /* channel 5 */
+	/* no body */
+
+	if (toscar_flap_sendsbuf_consume(mod, conn, &sb) == -1) {
+		naf_sbuf_free(mod, &sb);
+		return -1;
+	}
+
+	return 0; /* sbuf consumed */
+}
+
+int
 toscar_flap_prepareconn(struct nafmodule *mod, struct nafconn *conn)
 {
 
