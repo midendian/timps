@@ -1012,11 +1012,12 @@ static int listconns_matcher(struct nafmodule *mod, struct nafconn *conn, const 
 		if (conn->parent)
 			naf_rpc_addarg_string(mod, carg, "parent", getcidstr(conn->parent));
 		naf_rpc_addarg_scalar(mod, carg, "servtype", conn->servtype);
+		naf_rpc_addarg_scalar(mod, carg, "flags", conn->flags);
 
 		if (lci->wanttags) {
 			naf_rpc_arg_t **tags;
 
-			if ((tags = naf_rpc_addarg_array(mod, carg, "tags"))) 
+			if ((tags = naf_rpc_addarg_array(mod, carg, "tags")))
 				naf_tag_iter(&conn->taglist, NULL, listconns_tag_matcher, (void *)tags);
 		}
 	}
