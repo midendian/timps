@@ -182,6 +182,24 @@ toscar_snachandler_0001_0002(struct nafmodule *mod, struct nafconn *conn, struct
 }
 
 /*
+ * 0001/0003 (server->client) Host Online
+ *
+ * Received after we're somewhat authenticated with the host.
+ *
+ */
+static int
+toscar_snachandler_0001_0003(struct nafmodule *mod, struct nafconn *conn, struct toscar_snac *snac)
+{
+
+	conn->flags |= TOSCAR_FLAG_READY;
+
+	if (timps_oscar__debug > 0)
+		dvprintf(mod, "[%lu] received Host Online\n", conn->cid);
+
+	return HRET_FORWARD;
+}
+
+/*
  * 0001/000b (server->client) Server Pause
  *
  * This is the first step in migration, where the server moves the client to a
@@ -412,6 +430,7 @@ static struct snachandler {
 	toscar_snachandler_t handler;
 } toscar__snachandlers[] = {
 	{0x0001, 0x0002, toscar_snachandler_0001_0002},
+	{0x0001, 0x0003, toscar_snachandler_0001_0003},
 	{0x0001, 0x000b, toscar_snachandler_0001_000b},
 	{0x0004, 0x0006, toscar_snachandler_0004_0006},
 	{0x0004, 0x0007, toscar_snachandler_0004_0007},

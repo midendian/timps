@@ -39,6 +39,9 @@ extern int timps_oscar__enableprorogueall;
 #define TOSCAR_SERVTYPE_BOS     0x0009
 #define TOSCAR_SERVTYPE_AUTH    0x0017
 
+#define TOSCAR_FLAG_NONE        0x00000000
+#define TOSCAR_FLAG_READY       0x00000001
+
 /* the service name we use for gnr nodes/messages */
 #define OSCARSERVICE "AIM"
 

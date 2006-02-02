@@ -201,6 +201,8 @@ int
 toscar_flap_prepareconn(struct nafmodule *mod, struct nafconn *conn)
 {
 
+	conn->flags = TOSCAR_FLAG_NONE;
+
 	if (timps_oscar__enableprorogueall)
 		conn->type |= NAF_CONN_TYPE_PROROGUEDEATH;
 
@@ -331,7 +333,7 @@ toscar_flap_handlechan1(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *b
 	tlvh = naf_tlv_parse(mod, &sb);
 
 	if (FLAPHDR_LEN(buf) == 4) { /* version only */
-		if (conn->type & NAF_CONN_TYPE_SERVER) 
+		if (conn->type & NAF_CONN_TYPE_SERVER)
 			ret = toscar_flap_handlechan1__conncomplete(mod, conn);
 		else
 			ret = HRET_DIGESTED; /* wait to see what else they have for us */

@@ -321,6 +321,9 @@ toscar__keepalive_matcher(struct nafmodule *mod, struct nafconn *conn, const voi
 	    !(conn->type & NAF_CONN_TYPE_SERVER))
 		return 0;
 
+	if (!(conn->flags & TOSCAR_FLAG_READY))
+		return 0;
+
 	if ((now - conn->lasttx_soft) > timps_oscar__keepalive_frequency) {
 		if (timps_oscar__debug > 1) {
 			dvprintf(mod, "[%lu] sending nop (%d seconds since last tx)\n",
