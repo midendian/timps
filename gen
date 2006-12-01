@@ -2,6 +2,14 @@
 if [ "$LIBTOOLIZE" = "" ]; then
 	LIBTOOL=`which libtool`
 	LIBTOOLIZE=`which libtoolize`
+	if [ ! -x "$LIBTOOL" -o ! -x "$LIBTOOLIZE" ]; then
+		LIBTOOL=`which glibtool`
+		LIBTOOLIZE=`which glibtoolize`
+	fi
+fi
+if [ ! -x $LIBTOOL -o ! -x $LIBTOOLIZE ]; then
+	echo "no libtool or libtoolize found"
+	exit 1
 fi
 $LIBTOOLIZE -f -c
 aclocal
