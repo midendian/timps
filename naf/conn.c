@@ -1149,12 +1149,12 @@ static void timerhandler(struct nafmodule *mod)
 	return;
 }
 
-static struct nafconn *listenestablish(struct nafmodule *mod, unsigned short portnum, struct nafmodule *nowner)
+static struct nafconn *listenestablish(struct nafmodule *mod, const char *addr, unsigned short portnum, struct nafmodule *nowner)
 {
 	nbio_sockfd_t sfd;
 	struct nafconn *retconn = NULL;
 
-	if ((sfd = nbio_sfd_newlistener(&gnb, portnum)) == -1) {
+	if ((sfd = nbio_sfd_newlistener(&gnb, addr, portnum)) == -1) {
 		dprintf(mod, "unable to create listener socket\n");
 		return NULL;
 	}
@@ -1170,25 +1170,38 @@ static struct nafconn *listenestablish(struct nafmodule *mod, unsigned short por
 
 static int findlistenport_matcher(struct nafmodule *mod, struct nafconn *conn, const void *data)
 {
-	unsigned short port;
+	struct sockaddr_in *insin;
+	struct sockaddr_in *testsin;
 
 	if (!(conn->type & NAF_CONN_TYPE_LISTENER))
 		return 0;
 
-	port = ntohs(((struct sockaddr_in *)&conn->localendpoint)->sin_port);
+	insin = (struct sockaddr_in *)data;
+	testsin = (struct sockaddr_in *)&conn->localendpoint;
 
-	if (port == *(unsigned short *)data)
+	if ((testsin->sin_family == insin->sin_family) &&
+	    (testsin->sin_addr.s_addr == insin->sin_addr.s_addr) &&
+	    (testsin->sin_port == insin->sin_port))
 		return 1;
-
 	return 0;
 }
 
-static struct nafconn *findlistenport(struct nafmodule *mod, unsigned short port)
+static struct nafconn *findlistenport(struct nafmodule *mod, const char *addr, unsigned short port)
 {
-	return naf_conn_find(mod, findlistenport_matcher, (const void *)&port);
+	struct sockaddr_in sin;
+
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family = AF_INET;
+	if (addr) {
+		if (inet_pton(AF_INET, addr, &sin.sin_addr.s_addr) != 1)
+			return NULL;
+	}
+	sin.sin_port = htons(port);
+
+	return naf_conn_find(mod, findlistenport_matcher, (const void *)&sin);
 }
 
-static int listenport_isconfigured(struct nafmodule *mod, unsigned short port)
+static int listenport_isconfigured(struct nafmodule *mod, const char *inaddr, unsigned short inport)
 {
 	char *conf, *cur;
 
@@ -1197,10 +1210,22 @@ static int listenport_isconfigured(struct nafmodule *mod, unsigned short port)
 
 	cur = strtok(conf, ",");
 	do {
+		char *colon;
+		char *addr = NULL;
+
 		if (!cur)
 			break;
 
-		if (port == atoi(cur)) {
+		colon = strchr(cur, ':');
+		if (colon) {
+			addr = cur;
+			*(colon++) = '\0';
+			cur = colon;
+		}
+
+		if ((inport == atoi(cur)) &&
+		    (!!addr == !!inaddr) &&
+		    (addr && (strcmp(addr, inaddr) == 0))) {
 			naf_free(mod, conf);
 			return 1;
 		}
@@ -1214,15 +1239,20 @@ static int listenport_isconfigured(struct nafmodule *mod, unsigned short port)
 
 static int cleanlisteners_matcher(struct nafmodule *mod, struct nafconn *conn, const void *data)
 {
+	struct sockaddr_in *testsin;
 	unsigned short port;
+	char addr[128];
 
 	if (!(conn->type & NAF_CONN_TYPE_LISTENER))
 		return 0;
 
-	port = ntohs(((struct sockaddr_in *)&conn->localendpoint)->sin_port);
+	testsin = (struct sockaddr_in *)&conn->localendpoint;
+	port = ntohs(testsin->sin_port);
+	if (!inet_ntop(AF_INET, &testsin->sin_addr, addr, sizeof(addr)))
+		return 0;
 
-	if (!listenport_isconfigured(mod, port)) {
-		dvprintf(mod, "removing unconfigured listen port %u\n", port);
+	if (!listenport_isconfigured(mod, addr, port)) {
+		dvprintf(mod, "removing unconfigured listen port %s:%u\n", addr ? addr : "any", port);
 		naf_conn_free(conn);
 	}
 
@@ -1257,12 +1287,19 @@ static void cleanlisteners(struct nafmodule *mod)
 		struct nafconn *nconn = NULL;
 		struct nafmodule *nconnowner = NULL;
 		const char *owner = NULL;
+		char *addr = NULL;
+		char *colon;
 		int portnum = -1;
 		int goahead = 1;
 
 		if (!cur)
 			break;
 
+		if ((colon = strchr(cur, ':'))) {
+			addr = cur;
+			*(colon++) = '\0';
+			cur = colon;
+		}
 		portnum = atoi(cur);
 
 		owner = strchr(cur, '/');
@@ -1281,13 +1318,13 @@ static void cleanlisteners(struct nafmodule *mod)
 			goahead = 0;
 		}
 
-		if (findlistenport(mod, (naf_u16_t)atoi(cur))) {
+		if (findlistenport(mod, addr, (naf_u16_t)atoi(cur))) {
 			dvprintf(mod, "duplicate listener specified on port %d\n", portnum);
 			goahead = 0;
 		}
 
 		if (goahead)
-			nconn = listenestablish(mod, (naf_u16_t)portnum, nconnowner);
+			nconn = listenestablish(mod, addr, (naf_u16_t)portnum, nconnowner);
 
 		if (nconn) {
 			dvprintf(mod, "listening on port %d (for %s)\n",
