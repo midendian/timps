@@ -97,8 +97,8 @@ static struct nafmodule *ourmodule = NULL;
 /*
  * Incremented for every new connection. Wraps itself eventually.
  */
-static naf_conn_cid_t conn_nextcid = 0;
-
+static naf_conn_cid_t naf_conn__nextcid = 0;
+static naf_u32_t naf_conn__openconns = 0;
 
 
 int naf_conn_tag_add(struct nafmodule *mod, struct nafconn *conn, const char *name, char type, void *data)
@@ -257,6 +257,8 @@ static void naf_conn_free(struct nafconn *dead)
 
 	if (naf_conn__debug)
 		dvprintf(ourmodule, "naf_conn_free(%p [cid %d])\n", dead, dead->cid);
+
+	naf_conn__openconns--;
 
 	/* This does the very important step of setting fdt->priv to NULL */
 	closefdt(dead->fdt);
@@ -517,10 +519,12 @@ static struct nafconn *naf_conn_alloc(void)
 		return NULL;
 	memset(nc, 0, sizeof(struct nafconn));
 
-	nc->cid = conn_nextcid++;
+	nc->cid = naf_conn__nextcid++;
 
 	if (naf_conn__debug)
 		dvprintf(ourmodule, "naf_conn_alloc: %p (cid %d)\n", nc, nc->cid);
+
+	naf_conn__openconns++;
 
 	return nc;
 }
@@ -980,6 +984,33 @@ static int listconns_tag_matcher(struct nafmodule *mod, void *udv, const char *t
 	return 0; /* keep going */
 }
 
+/*
+ * conn->getconnstats()
+ *   IN:
+ *
+ *   OUT:
+ *      array general {
+ *          scalar total;
+ *          scalar open;
+ *      }
+ */
+static void
+__rpc_conn_getconnstats(struct nafmodule *mod, naf_rpc_req_t *req)
+{
+	naf_rpc_arg_t **carg;
+
+	carg = naf_rpc_addarg_array(mod, &req->returnargs, "general");
+	if (!carg) {
+		req->status = NAF_RPC_STATUS_UNKNOWNFAILURE;
+		return;
+	}
+	naf_rpc_addarg_scalar(mod, carg, "total", (naf_u32_t)naf_conn__nextcid);
+	naf_rpc_addarg_scalar(mod, carg, "open", naf_conn__openconns);
+
+	req->status = NAF_RPC_STATUS_SUCCESS;
+	return;
+}
+
 struct listconnsinfo {
 	naf_rpc_arg_t **head;
 	naf_rpc_arg_t *cid;
@@ -1076,6 +1107,7 @@ static int modinit(struct nafmodule *mod)
 	nbio_init(&gnb, 32768);
 
 	naf_rpc_register_method(mod, "getconninfo", __rpc_conn_getconninfo, "Retrieve connection information");
+	naf_rpc_register_method(mod, "getconnstats", __rpc_conn_getconnstats, "Retrieve connection statistics");
 
 	return 0;
 }
