@@ -50,6 +50,7 @@
 #endif
 
 #include <naf/nafmodule.h>
+#include <naf/nafconfig.h>
 #include <naf/nafrpc.h>
 #include <naf/nafhttpd.h>
 
@@ -60,7 +61,8 @@
 #include "module.h" /* for naf_module__registerresident() only */
 
 static struct nafmodule *ourmodule = NULL;
-static int httpd_debug = 0;
+#define NAF_HTTPD_DEBUG_DEFAULT 0
+static int naf_httpd__debug = NAF_HTTPD_DEBUG_DEFAULT;
 
 #define SOAPBUFLEN 1024
 #define SOAPMONBUFLEN 1
@@ -176,7 +178,7 @@ static int handlefirstreqline(struct nafmodule *mod, struct nafconn *conn, char 
 
 	if ((strncmp(buf, "GET ", 4) != 0) &&
 			(strncmp(buf, "POST ", 5) != 0) &&
-			(httpd_debug > 0)) {
+			(naf_httpd__debug > 0)) {
 		dvprintf(mod, "unrecognized request: \"%s\"\n", buf);
 		return -1;
 	}
@@ -186,7 +188,7 @@ static int handlefirstreqline(struct nafmodule *mod, struct nafconn *conn, char 
 	file = http_getnextarg(mod, &cur);
 	prot = http_getnextarg(mod, &cur);
 
-	if (httpd_debug > 0)
+	if (naf_httpd__debug > 0)
 		dvprintf(mod, "request: req = '%s', file = '%s', prot = '%s'\n", req, file, prot);
 
 	if ((strcasecmp(req, "GET") == 0) && file && strlen(file)) {
@@ -222,7 +224,7 @@ static int handleheaderline(struct nafmodule *mod, struct nafconn *conn, char *b
 	*(value++) = '\0';
 	value = nextnonwhite(value);
 
-	if (httpd_debug > 0)
+	if (naf_httpd__debug > 0)
 		dvprintf(mod, "header: name = '%s', value = '%s'\n", name, value);
 
 	if (!name || !strlen(name))
@@ -428,7 +430,7 @@ static int dorequest_get(struct nafmodule *mod, struct nafconn *conn, char *file
 	if (!hp) {
 		hp = naf_httpd_page__find_loose(mod, file);
 		if (!hp) {
-			if (httpd_debug > 0)
+			if (naf_httpd__debug > 0)
 				dvprintf(mod, "no handler matching page '%s'\n", file);
 			return send404(mod, conn);
 		}
@@ -483,7 +485,7 @@ static void handlenafrpc_startelement(void *userdata, const char *name, const ch
 	}
 
 	if (strcasecmp(name, "SOAP-ENV:Envelope") != 0) {
-		if (httpd_debug > 0)
+		if (naf_httpd__debug > 0)
 			dvprintf(info->mod, "(start) unknown outer tag '%s'\n", name);
 		return;
 	}
@@ -550,7 +552,7 @@ static void handlenafrpc_endelement(void *userdata, const char *name)
 	}
 
 	if (strcasecmp(name, "SOAP-ENV:Envelope") != 0) {
-		if (httpd_debug > 0)
+		if (naf_httpd__debug > 0)
 			dvprintf(info->mod, "(end) unknown outer tag '%s'\n", name);
 	}
 
@@ -946,7 +948,7 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 		} else if (conn->state == SOAPCONN_STATE_INREQPAYLOAD) {
 			int ret;
 
-			if (httpd_debug > 0)
+			if (naf_httpd__debug > 0)
 				dvprintf(mod, "received %d bytes of HTTP payload\n", buflen);
 			conn->state = SOAPCONN_STATE_PROCESSING;
 			if (reqmonitorbuf(mod, conn) == -1)
@@ -1018,6 +1020,54 @@ sendbasicdata(struct nafmodule *mod, struct nafconn *conn, const char *format, .
 		return -1;
 	}
 	return 0;
+}
+
+static void
+sendargs(struct nafmodule *mod, struct nafconn *httpconn, naf_rpc_arg_t *head)
+{
+	naf_rpc_arg_t *arg;
+
+	sendbasicdata(mod, httpconn, "<ul>");
+
+	for (arg = head; arg; arg = arg->next) {
+
+		if (arg->type == NAF_RPC_ARGTYPE_SCALAR) {
+			char tmp[255];
+			snprintf(tmp, sizeof(tmp)-1,
+					"<li>[scalar] %s = %lu</li>\n",
+					arg->name, arg->data.scalar);
+			sendbasicdata(mod, httpconn, tmp);
+		} else if (arg->type == NAF_RPC_ARGTYPE_GENERIC) {
+			char tmp[255];
+			snprintf(tmp, sizeof(tmp)-1,
+					"<li>[generic] %s = [...]</li>\n",
+					arg->name);
+			sendbasicdata(mod, httpconn, tmp);
+		} else if (arg->type == NAF_RPC_ARGTYPE_BOOL) {
+			char tmp[255];
+			snprintf(tmp, sizeof(tmp)-1,
+					"<li>[bool] %s = %s</li>\n",
+					arg->name,
+					arg->data.boolean ? "true" : "false");
+			sendbasicdata(mod, httpconn, tmp);
+		} else if (arg->type == NAF_RPC_ARGTYPE_STRING) {
+			char tmp[255];
+			snprintf(tmp, sizeof(tmp)-1,
+					"<li>[string] %s = '%s'</li>\n",
+					arg->name, arg->data.string);
+			sendbasicdata(mod, httpconn, tmp);
+		} else if (arg->type == NAF_RPC_ARGTYPE_ARRAY) {
+			char tmp[255];
+			snprintf(tmp, sizeof(tmp)-1,
+					"<li>[array] %s ...</li>\n",
+					arg->name);
+			sendbasicdata(mod, httpconn, tmp);
+			sendargs(mod, httpconn, arg->data.children);
+		}
+	}
+	sendbasicdata(mod, httpconn, "</ul>");
+
+	return;
 }
 
 static int
@@ -1104,7 +1154,9 @@ nextarg:	/* go next argument */
 		sendbasicdata(mod, httpdconn, "<br/><b>%s</b> (0x%04x)<br/>",
 			      code, req->status);
 
-		/* XXX send back return values */
+		sendbasicdata(mod, httpdconn, "<br/>return args:<br/>");
+		sendargs(mod, httpdconn, req->returnargs);
+
 	}
 
 	naf_rpc_request_free(mod, req);
@@ -1132,6 +1184,18 @@ static int modshutdown(struct nafmodule *mod)
 	return 0;
 }
 
+static void signalhandler(struct nafmodule *mod, struct nafmodule *source, int signum)
+{
+
+	if (signum == NAF_SIGNAL_CONFCHANGE) {
+		NAFCONFIG_UPDATEINTMODPARMDEF(mod, "debug",
+					      naf_httpd__debug,
+					      NAF_HTTPD_DEBUG_DEFAULT);
+	}
+
+	return;
+}
+
 static int modfirst(struct nafmodule *mod)
 {
 
@@ -1142,6 +1206,7 @@ static int modfirst(struct nafmodule *mod)
 	mod->connready = connready;
 	mod->connkill = connkill;
 	mod->freetag = freetag;
+	mod->signal = signalhandler;
 
 	return 0;
 }
