@@ -435,6 +435,8 @@ static int connhandler_incomingconn(nbio_fd_t *fdt)
 	int salen = sizeof(sa);
 	struct nafconn *nconn;
 
+	/* we use this as an incoming connection counter on listeners */
+	lconn->lasttx_hard++;
 
 	if (naf_conn__debug > 1)
 		dvprintf(ourmodule, "connhandler_incomingconn(%p [fd %d, cid %d])\n", fdt, fdt->fd, lconn->cid);
@@ -1044,6 +1046,9 @@ static int listconns_matcher(struct nafmodule *mod, struct nafconn *conn, const 
 			naf_rpc_addarg_string(mod, carg, "parent", getcidstr(conn->parent));
 		naf_rpc_addarg_scalar(mod, carg, "servtype", conn->servtype);
 		naf_rpc_addarg_scalar(mod, carg, "flags", conn->flags);
+
+		if (conn->type & NAF_CONN_TYPE_LISTENER)
+			naf_rpc_addarg_scalar(mod, carg, "acceptcount", conn->lasttx_hard);
 
 		if (lci->wanttags) {
 			naf_rpc_arg_t **tags;
