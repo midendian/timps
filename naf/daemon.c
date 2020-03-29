@@ -372,7 +372,7 @@ int naf_init1(int argc, char **argv)
 
 #ifndef NOUNIXRLIMITS
 	if (setnofilelimit() == -1)
-		dprintf(NULL, "WARNING: unable to increase file descriptor ulimit\n");
+		tprintf(NULL, "WARNING: unable to increase file descriptor ulimit\n");
 	setcorelimit();
 #endif
 
@@ -406,7 +406,7 @@ int naf_init1(int argc, char **argv)
 #endif
 
 	if (!conffn) {
-		dprintf(NULL, "no config file specified (use -c)\n");
+		tprintf(NULL, "no config file specified (use -c)\n");
 		fprintf(stderr, "no config file specified (use -c)\n");
 		naf_uninit();
 		return -1;
@@ -432,7 +432,7 @@ int naf_init1(int argc, char **argv)
 
 #ifndef NOUNIXDAEMONIZATION
 	if (daemonize && (dodaemonize() == -1)) {
-		dprintf(NULL, "unable to daemonize");
+		tprintf(NULL, "unable to daemonize");
 		naf_uninit();
 		return -1;
 	}
@@ -450,13 +450,13 @@ int naf_init_final(void)
 	/* make sure everything is sane. */
 	nafsignal(NULL, NAF_SIGNAL_CONFCHANGE);
 
-	dprintf(NULL, "started\n");
+	tprintf(NULL, "started\n");
 #ifndef NOUNIXDAEMONIZATION
-	dvprintf(NULL, "running as pid %d\n", getpid());
+	tvprintf(NULL, "running as pid %d\n", getpid());
 #endif
 #ifndef NOUNIXRLIMITS
-	dvprintf(NULL, "maximum number of open file descriptors: %d\n", getnofilelimit());
-	dvprintf(NULL, "maximum core file size: %d bytes\n", getcorelimit());
+	tvprintf(NULL, "maximum number of open file descriptors: %d\n", getnofilelimit());
+	tvprintf(NULL, "maximum core file size: %d bytes\n", getcorelimit());
 #endif
 
 	return 0;
@@ -484,7 +484,7 @@ int naf_main(void)
 	}
 
 	/* should be unreachable */
-	dvprintf(NULL, "died for some reason (possibly because of %s)\n", strerror(errno));
+	tvprintf(NULL, "died for some reason (possibly because of %s)\n", strerror(errno));
 
 	naf_uninit();
 

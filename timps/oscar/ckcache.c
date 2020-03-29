@@ -113,7 +113,7 @@ toscar_ckcache_add(struct nafmodule *mod, naf_u8_t *ck, naf_u16_t cklen, const c
 
 	if (toscar_ckcache__find(mod, ck, cklen)) {
 		if (timps_oscar__debug > 0)
-			dprintf(mod, "ckcache: attempted to add duplicate cookie\n");
+			tprintf(mod, "ckcache: attempted to add duplicate cookie\n");
 		return -1; /* dups are bad... */
 	}
 
@@ -125,7 +125,7 @@ toscar_ckcache_add(struct nafmodule *mod, naf_u8_t *ck, naf_u16_t cklen, const c
 	timps_oscar__ckcache = ckc;
 
 	if (timps_oscar__debug > 1) {
-		dvprintf(mod, "ckcache: added cookie %02x %02x %02x %02x\n",
+		tvprintf(mod, "ckcache: added cookie %02x %02x %02x %02x\n",
 				ckc->ck[0], ckc->ck[1],
 				ckc->ck[2], ckc->ck[3]);
 	}
@@ -156,7 +156,7 @@ toscar_ckcache_rem(struct nafmodule *mod, naf_u8_t *ck, naf_u16_t cklen, char **
 	struct ckcache *ckc;
 
 	if (timps_oscar__debug > 1) {
-		dvprintf(mod, "ckcache: looking to remove cookie %02x %02x %02x %02x\n",
+		tvprintf(mod, "ckcache: looking to remove cookie %02x %02x %02x %02x\n",
 				ck[0], ck[1],
 				ck[2], ck[3]);
 	}

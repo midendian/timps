@@ -270,7 +270,7 @@ tlogging_nodeeventhandler(struct nafmodule *mod, struct gnr_event_info *gei)
 		fn = mkuserlogfn(mod, gei->gei_node);
 		if (!fn || !(peruser = fopen(fn, "a")) ||
 				(gnr_node_tag_add(mod, gei->gei_node, "gnrnode.userlogstream", 'V', (void *)peruser) == -1)) {
-			dvprintf(mod, "unable to open log file '%s' for user '%s'\n", fn, gei->gei_node->name);
+			tvprintf(mod, "unable to open log file '%s' for user '%s'\n", fn, gei->gei_node->name);
 			if (peruser) {
 				fclose(peruser);
 				peruser = NULL;
@@ -317,7 +317,7 @@ freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, 
 
 	} else {
 
-		dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
+		tvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
 	}
 
 	return;
@@ -330,7 +330,7 @@ modinit(struct nafmodule *mod)
 	timps_logging__module = mod;
 
 	if (gnr_msg_register(mod, NULL /* no outputfunc */) == -1) {
-		dprintf(mod, "modinit: gsr_msg_register failed\n");
+		tprintf(mod, "modinit: gsr_msg_register failed\n");
 		return -1;
 	}
 	gnr_msg_addmsghandler(mod, GNR_MSG_MSGHANDLER_STAGE_POSTROUTING, 50, tlogging_msglogger, "Log messages");

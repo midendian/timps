@@ -194,7 +194,7 @@ void *naf_malloc_real(struct nafmodule *mod, int type, size_t reqsize, const cha
 	static const naf_u8_t ftrmatch[] = FTR_MAGIC_END;
 
 	if (naf_memory__debug >= 2) {
-		dvprintf(NULL, "[%s:%d] NAF_MALLOC(%p=%s, 0x%04x, %d)\n",
+		tvprintf(NULL, "[%s:%d] NAF_MALLOC(%p=%s, 0x%04x, %d)\n",
 				file, line,
 				mod,
 				mod ? mod->name : "(none)",
@@ -211,7 +211,7 @@ void *naf_malloc_real(struct nafmodule *mod, int type, size_t reqsize, const cha
 	if (!(buf = malloc(buflen))) {
 
 		if (naf_memory__debug) {
-			dvprintf(NULL, "[%s:%d] NAF_MALLOC(%p=%s, 0x%04x, %d) FAILED\n",
+			tvprintf(NULL, "[%s:%d] NAF_MALLOC(%p=%s, 0x%04x, %d) FAILED\n",
 					file, line,
 					mod,
 					mod ? mod->name : "(none)",
@@ -258,7 +258,7 @@ void *naf_malloc_real(struct nafmodule *mod, int type, size_t reqsize, const cha
 	}
 
 	if (naf_memory__debug >= 2) {
-		dvprintf(NULL, "[%s:%d] NAF_MALLOC(%p=%s, 0x%04x, %d) = %p/%p\n",
+		tvprintf(NULL, "[%s:%d] NAF_MALLOC(%p=%s, 0x%04x, %d) = %p/%p\n",
 				file, line,
 				mod,
 				mod ? mod->name : "(none)",
@@ -278,7 +278,7 @@ void naf_free_real(struct nafmodule *mod, void *ptr, const char *file, int line)
 	static const char ftrmatch[] = FTR_MAGIC_END;
 
 	if (naf_memory__debug >= 2) {
-		dvprintf(NULL, "[%s:%d] NAF_FREE(%p=%s, %p)\n",
+		tvprintf(NULL, "[%s:%d] NAF_FREE(%p=%s, %p)\n",
 				file, line,
 				mod,
 				mod ? mod->name : "(none)",
@@ -305,7 +305,7 @@ void naf_free_real(struct nafmodule *mod, void *ptr, const char *file, int line)
 			(hdr->hdrmagic1 != HDR_MAGIC_START)) {
 
 		if (naf_memory__debug) {
-			dvprintf(NULL, "[%s:%d] NAF_FREE(%p=%s, %p) -- buffer was not allocated with naf_malloc! 0x%08lx, 0x%08lx\n",
+			tvprintf(NULL, "[%s:%d] NAF_FREE(%p=%s, %p) -- buffer was not allocated with naf_malloc! 0x%08lx, 0x%08lx\n",
 					file, line,
 					mod,
 					mod ? mod->name : "(none)",
@@ -322,7 +322,7 @@ void naf_free_real(struct nafmodule *mod, void *ptr, const char *file, int line)
 	if (naf_memory__debug &&
 			(mod && (strcmp(mod->name, "nafconsole") != 0))) {
 		if (hdr->owner != mod) {
-			dvprintf(NULL, "[%s:%d] NAF_FREE(%p=%s, %p) -- buffer originally allocated by %p=%s... mismatch!\n",
+			tvprintf(NULL, "[%s:%d] NAF_FREE(%p=%s, %p) -- buffer originally allocated by %p=%s... mismatch!\n",
 					file, line,
 					mod,
 					mod ? mod->name : "(none)",
@@ -336,7 +336,7 @@ void naf_free_real(struct nafmodule *mod, void *ptr, const char *file, int line)
 
 	ftr = ((unsigned char *)hdr) + hdr->hdrlen + hdr->buflen;
 	if (memcmp(ftr, ftrmatch, sizeof(ftrmatch)) != 0) {
-		dvprintf(NULL, "[%s:%d] NAF_FREE(%p=%s, %p) -- footer magic corrupt, someone ran over us!\n",
+		tvprintf(NULL, "[%s:%d] NAF_FREE(%p=%s, %p) -- footer magic corrupt, someone ran over us!\n",
 				file, line,
 				mod,
 				mod ? mod->name : "(none)",
@@ -405,7 +405,7 @@ naf_flmempool_t *naf_flmp_alloc(struct nafmodule *owner, int memtype, int blklen
 	flmp->flmp_allocmaplen = flmp->flmp_blkcount / 8;
 
 #ifdef CHATTYFLMP
-	dvprintf(NULL, "()()()() naf_flmp_alloc: allocating pool of %d blocks, %d bytes each, total region of %d bytes, map size of %d\n",
+	tvprintf(NULL, "()()()() naf_flmp_alloc: allocating pool of %d blocks, %d bytes each, total region of %d bytes, map size of %d\n",
 			flmp->flmp_blkcount,
 			flmp->flmp_blklen,
 			flmp->flmp_regionlen,
@@ -485,7 +485,7 @@ void *naf_flmp_blkalloc(struct nafmodule *owner, naf_flmempool_t *flmp)
 	block = flmp->flmp_region + (((i * 8) + (7 - j)) * flmp->flmp_blklen);
 
 #ifdef CHATTYFLMP
-	dvprintf(NULL, "()()()() naf_flmp_blkalloc: returning block number %d, ptr %p, map index [%d,%d]\n",
+	tvprintf(NULL, "()()()() naf_flmp_blkalloc: returning block number %d, ptr %p, map index [%d,%d]\n",
 			(i * 8) + (7 - j),
 			block,
 			i, j);
@@ -510,7 +510,7 @@ void naf_flmp_blkfree(struct nafmodule *owner, naf_flmempool_t *flmp, void *bloc
 
 	i = blknum / 8; j = 7 - (blknum % 8);
 #ifdef CHATTYFLMP
-	dvprintf(NULL, "()()()() naf_flmp_blkfree: block = %p, blknum = %d, map index [%d, %d]\n",
+	tvprintf(NULL, "()()()() naf_flmp_blkfree: block = %p, blknum = %d, map index [%d, %d]\n",
 			block,
 			blknum,
 			i, j);

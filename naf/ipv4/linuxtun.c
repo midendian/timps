@@ -97,7 +97,7 @@ opentun(void)
 
 	fd = open("/dev/net/tun", O_RDWR);
 	if (fd == -1) {
-		dvprintf(naf_linuxtun__module, "open(/dev/net/tun): %s\n", strerror(errno));
+		tvprintf(naf_linuxtun__module, "open(/dev/net/tun): %s\n", strerror(errno));
 		return -1;
 	}
 
@@ -105,12 +105,12 @@ opentun(void)
 	ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
 
 	if (ioctl(fd, TUNSETIFF, &ifr) == -1) {
-		dvprintf(naf_linuxtun__module, "ioctl(TUNSETIFF): %s\n", strerror(errno));
+		tvprintf(naf_linuxtun__module, "ioctl(TUNSETIFF): %s\n", strerror(errno));
 		close(fd);
 		return -1;
 	}
 
-	dvprintf(naf_linuxtun__module, "opened Linux tun device %s\n", ifr.ifr_name);
+	tvprintf(naf_linuxtun__module, "opened Linux tun device %s\n", ifr.ifr_name);
 
 	naf_linuxtun__ifconn = naf_conn_addconn(naf_linuxtun__module,
 						fd,
@@ -141,12 +141,12 @@ connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what)
 
 		err = read(conn->fdt->fd, dg, sizeof(dg));
 		if (err <= 0) {
-			dvprintf(naf_linuxtun__module, "error reading from tun device: %s\n", (err == 0) ? "EOF" : strerror(err));
+			tvprintf(naf_linuxtun__module, "error reading from tun device: %s\n", (err == 0) ? "EOF" : strerror(err));
 			naf_conn_schedulekill(conn);
 			return -1;
 		}
 
-		dvprintf(naf_linuxtun__module, "received %d octet datagram\n", err);
+		tvprintf(naf_linuxtun__module, "received %d octet datagram\n", err);
 		naf_ipv4_input(naf_linuxtun__module, naf_linuxtun__if, dg, err);
 
 		return 0;
@@ -162,7 +162,7 @@ modinit(struct nafmodule *mod)
 	naf_linuxtun__module = mod;
 
 	if (opentun() == -1)
-		dprintf(naf_linuxtun__module, "failed to open Linux TUN device\n");
+		tprintf(naf_linuxtun__module, "failed to open Linux TUN device\n");
 
 	return 0;
 }

@@ -62,13 +62,13 @@
 
 /* LOGGING PLUGINS CAN NEVER USE DPRINTF WITH A NON-NULL FIRST ARG!! */
 /* So we can't use the standard ones */
-#undef dprintf
-#undef dperror
+#undef tprintf
+#undef tperror
 #ifndef NOVAMACROS
-#undef dvprintf
-#define dvprintf(p, x, y...) nafevent(NULL, NAF_EVENT_GENERICOUTPUT, x, y)
+#undef tvprintf
+#define tvprintf(p, x, y...) nafevent(NULL, NAF_EVENT_GENERICOUTPUT, x, y)
 #endif
-#define dprintf(p, x) nafevent(NULL, NAF_EVENT_GENERICOUTPUT, x)
+#define tprintf(p, x) nafevent(NULL, NAF_EVENT_GENERICOUTPUT, x)
 
 static struct nafmodule *ourmodule = NULL;
 
@@ -370,17 +370,17 @@ static void signalhandler(struct nafmodule *mod, struct nafmodule *source, int s
 
 	if (signum == NAF_SIGNAL_INFO) {
 
-		dprintf(NULL, "Logging module info:\n");
-		dvprintf(NULL, "  Output file: %s\n", outfilename ? outfilename : "stderr");
+		tprintf(NULL, "Logging module info:\n");
+		tvprintf(NULL, "  Output file: %s\n", outfilename ? outfilename : "stderr");
 
 	} else if (signum == NAF_SIGNAL_RELOAD) {
 
-		dprintf(NULL, "reopening logfile...\n");
+		tprintf(NULL, "reopening logfile...\n");
 		logging_restart(mod);
 
 	} else if (signum == NAF_SIGNAL_SHUTDOWN) {
 
-		dprintf(NULL, "deferring shutdown of logging module...\n");
+		tprintf(NULL, "deferring shutdown of logging module...\n");
 
 	} else if (signum == NAF_SIGNAL_CONFCHANGE) {
 

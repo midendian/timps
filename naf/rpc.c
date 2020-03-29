@@ -278,7 +278,7 @@ int naf_rpc_request_issue(struct nafmodule *mod, naf_rpc_req_t *req)
 	}
 
 	if (1)
-		dvprintf(ourmodule, "%s->%s() invoked by %s\n", req->target, req->method, mod->name);
+		tvprintf(ourmodule, "%s->%s() invoked by %s\n", req->target, req->method, mod->name);
 
 	rm->func(target, req); /* will set req->status */
 
@@ -460,7 +460,7 @@ static void __rpc_rpc_help(struct nafmodule *mod, naf_rpc_req_t *req)
 		}
 	}
 
-	dvprintf(mod, "rpc: rpc->help invoked with module=%s\n", module ? module->data.string : "(none)");
+	tvprintf(mod, "rpc: rpc->help invoked with module=%s\n", module ? module->data.string : "(none)");
 
 	if ((methods = naf_rpc_addarg_array(mod, &req->returnargs, "methods"))) {
 

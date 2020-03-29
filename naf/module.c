@@ -199,13 +199,13 @@ static int naf_module__load(struct modlist_item *mi)
 		return -1;
 #else
 		if (!(mi->dlhandle = dlopen(mi->filename, RTLD_NOW))) {
-			dvprintf(NULL, "%s: dlopen: %s\n", mi->filename, dlerror());
+			tvprintf(NULL, "%s: dlopen: %s\n", mi->filename, dlerror());
 			mi->status = MOD_STATUS_ERROR;
 			return -1;
 		}
 
 		if (!(mi->firstproc = dlsym(mi->dlhandle, "nafmodulemain"))) {
-			dvprintf(NULL, "%s: dlsym(nafmodulemain): %s\n", mi->filename, dlerror());
+			tvprintf(NULL, "%s: dlsym(nafmodulemain): %s\n", mi->filename, dlerror());
 			dlclose(mi->dlhandle);
 			mi->status = MOD_STATUS_ERROR;
 			return -1;
@@ -214,7 +214,7 @@ static int naf_module__load(struct modlist_item *mi)
 	}
 
 	if (!mi->firstproc || ((ret = mi->firstproc(&mi->module)) != 0)) {
-		dvprintf(NULL, "%s: nafmodulemain returned error %d\n", mi->filename, ret);
+		tvprintf(NULL, "%s: nafmodulemain returned error %d\n", mi->filename, ret);
 #ifndef NODYNAMICLOADING
 		if (mi->dlhandle)
 			dlclose(mi->dlhandle);
@@ -228,7 +228,7 @@ static int naf_module__load(struct modlist_item *mi)
 	if (mi->module.init)
 		mi->module.init(&mi->module);
 
-	dvprintf(NULL, "loaded module %s [%s]\n", mi->module.name, mi->filename);
+	tvprintf(NULL, "loaded module %s [%s]\n", mi->module.name, mi->filename);
 
 	mi->lasttimerrun = time(NULL);
 
@@ -354,7 +354,7 @@ int nafevent(struct nafmodule *source, naf_event_t event, ...)
 }
 
 #ifdef NOVAMACROS
-int dvprintf(struct nafmodule *mod, ...)
+int tvprintf(struct nafmodule *mod, ...)
 {
 	va_list ap;
 

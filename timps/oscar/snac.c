@@ -158,7 +158,7 @@ toscar_snachandler_0001_0002(struct nafmodule *mod, struct nafconn *conn, struct
 
 	if ((naf_conn_tag_fetch(mod, conn->endpoint, "conn.screenname", NULL, (void **)&sn) == -1) || !sn) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] received Client Online on connection with no user info; killing\n", conn->cid);
+			tvprintf(mod, "[cid %lu] received Client Online on connection with no user info; killing\n", conn->cid);
 		return HRET_ERROR;
 	}
 
@@ -174,7 +174,7 @@ toscar_snachandler_0001_0002(struct nafmodule *mod, struct nafconn *conn, struct
 				GNR_NODE_FLAG_NONE, GNR_NODE_METRIC_LOCAL);
 	if (!node) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] [%s] unable to create gnrnode; disconnecting\n", conn->cid, sn);
+			tvprintf(mod, "[cid %lu] [%s] unable to create gnrnode; disconnecting\n", conn->cid, sn);
 		return HRET_ERROR;
 	}
 
@@ -194,7 +194,7 @@ toscar_snachandler_0001_0003(struct nafmodule *mod, struct nafconn *conn, struct
 	conn->flags |= TOSCAR_FLAG_READY;
 
 	if (timps_oscar__debug > 0)
-		dvprintf(mod, "[%lu] received Host Online\n", conn->cid);
+		tvprintf(mod, "[%lu] received Host Online\n", conn->cid);
 
 	return HRET_FORWARD;
 }
@@ -213,7 +213,7 @@ toscar_snachandler_0001_000b(struct nafmodule *mod, struct nafconn *conn, struct
 
 	naf_conn_tag_fetch(mod, conn, "conn.screenname", NULL, (void **)&sn);
 
-	dvprintf(mod, "[cid %lu] [%s] received server pause; disconnecting for safety\n", conn->cid, sn);
+	tvprintf(mod, "[cid %lu] [%s] received server pause; disconnecting for safety\n", conn->cid, sn);
 
 	return HRET_ERROR;
 }
@@ -449,7 +449,7 @@ toscar_flap_handlesnac(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *bu
 #define SNACHDRLEN 10
 	if (buflen < SNACHDRLEN) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %ld] runt SNAC\n", conn->cid);
+			tvprintf(mod, "[cid %ld] runt SNAC\n", conn->cid);
 		hret = HRET_ERROR;
 		goto out;
 	}
@@ -468,13 +468,13 @@ toscar_flap_handlesnac(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *bu
 				buf + SNACHDRLEN + (exthdrlen ? (2 + exthdrlen) : 0),
 				(naf_u16_t)(buflen - SNACHDRLEN - (exthdrlen ? (2 + exthdrlen) : 0))) == -1) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %ld] failed to allocate sbuf for SNAC parsing\n", conn->cid);
+			tvprintf(mod, "[cid %ld] failed to allocate sbuf for SNAC parsing\n", conn->cid);
 		hret = HRET_ERROR;
 		goto out;
 	}
 
 	if (timps_oscar__debug > 1) {
-		dvprintf(mod, "[cid %lu] received SNAC %lx / %lx / %lx / %lx, %d bytes payload\n",
+		tvprintf(mod, "[cid %lu] received SNAC %lx / %lx / %lx / %lx, %d bytes payload\n",
 				conn->cid,
 				snac.group, snac.subtype,
 				snac.flags, snac.id,
@@ -506,7 +506,7 @@ toscar_flap_handlesnac(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *bu
 
 out:
 	if (timps_oscar__debug > 1) {
-		dvprintf(mod, "[cid %lu] SNAC handler returned %s%s%s (%d)\n",
+		tvprintf(mod, "[cid %lu] SNAC handler returned %s%s%s (%d)\n",
 				conn->cid,
 				(hret == HRET_ERROR) ? "ERROR" : "",
 				(hret == HRET_DIGESTED) ? "DIGESTED" : "",

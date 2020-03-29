@@ -105,7 +105,7 @@ int naf_conn_tag_add(struct nafmodule *mod, struct nafconn *conn, const char *na
 {
 
 	if (naf_conn__debug)
-		dvprintf(ourmodule, "naf_conn_tag_add: module = %s, conn = %d, name = %s, type = %c, data = %p\n", mod->name, conn ? conn->cid : -1, name, type, data);
+		tvprintf(ourmodule, "naf_conn_tag_add: module = %s, conn = %d, name = %s, type = %c, data = %p\n", mod->name, conn ? conn->cid : -1, name, type, data);
 
 	if (!conn)
 		return -1;
@@ -117,7 +117,7 @@ int naf_conn_tag_remove(struct nafmodule *mod, struct nafconn *conn, const char 
 {
 
 	if (naf_conn__debug)
-		dvprintf(ourmodule, "naf_conn_tag_remove: module = %s, conn = %d, name = %s\n", mod->name, conn ? conn->cid : -1, name);
+		tvprintf(ourmodule, "naf_conn_tag_remove: module = %s, conn = %d, name = %s\n", mod->name, conn ? conn->cid : -1, name);
 
 	if (!conn)
 		return -1;
@@ -129,7 +129,7 @@ int naf_conn_tag_ispresent(struct nafmodule *mod, struct nafconn *conn, const ch
 {
 
 	if (naf_conn__debug)
-		dvprintf(ourmodule, "naf_conn_tag_ispresent: module = %s, conn = %d, name = %s\n", mod->name, conn ? conn->cid : -1, name);
+		tvprintf(ourmodule, "naf_conn_tag_ispresent: module = %s, conn = %d, name = %s\n", mod->name, conn ? conn->cid : -1, name);
 
 	if (!conn)
 		return -1;
@@ -141,7 +141,7 @@ int naf_conn_tag_fetch(struct nafmodule *mod, struct nafconn *conn, const char *
 {
 
 	if (naf_conn__debug)
-		dvprintf(ourmodule, "naf_conn_tag_fetch: module = %s, conn = %d, name = %s\n", mod->name, conn ? conn->cid : -1, name);
+		tvprintf(ourmodule, "naf_conn_tag_fetch: module = %s, conn = %d, name = %s\n", mod->name, conn ? conn->cid : -1, name);
 
 	if (!conn)
 		return -1;
@@ -256,7 +256,7 @@ static void naf_conn_free(struct nafconn *dead)
 {
 
 	if (naf_conn__debug)
-		dvprintf(ourmodule, "naf_conn_free(%p [cid %d])\n", dead, dead->cid);
+		tvprintf(ourmodule, "naf_conn_free(%p [cid %d])\n", dead, dead->cid);
 
 	naf_conn__openconns--;
 
@@ -365,7 +365,7 @@ static int connhandler_read(nbio_fd_t *fdt)
 
 		} else {
 
-			dvprintf(ourmodule, "no known protocol found on %d\n", conn->fdt->fd);
+			tvprintf(ourmodule, "no known protocol found on %d\n", conn->fdt->fd);
 			naf_conn_free(conn);
 		}
 
@@ -377,7 +377,7 @@ static int connhandler_read(nbio_fd_t *fdt)
 			updaterawmode(conn);
 
 	} else {
-		dvprintf(ourmodule, "READ on %d\n", conn->fdt->fd);
+		tvprintf(ourmodule, "READ on %d\n", conn->fdt->fd);
 		naf_conn_free(conn);
 	}
 
@@ -399,7 +399,7 @@ static int connhandler_write(nbio_fd_t *fdt)
 			naf_conn_free(conn);
 
 	} else {
-		dvprintf(ourmodule, "WRITE on %d\n", conn->fdt->fd);
+		tvprintf(ourmodule, "WRITE on %d\n", conn->fdt->fd);
 		naf_conn_free(conn);
 	}
 
@@ -415,7 +415,7 @@ static int connhandler_eof(nbio_fd_t *fdt)
 		die = 1;
 
 	if (naf_conn__debug) {
-		dvprintf(ourmodule, "connhandler_eof(%p [fd %d, cid %d]) -- %s|%s|%s\n",
+		tvprintf(ourmodule, "connhandler_eof(%p [fd %d, cid %d]) -- %s|%s|%s\n",
 				fdt, fdt->fd, conn->cid,
 				(conn->type & NAF_CONN_TYPE_SERVER) ? "SERVER" : "",
 				(conn->type & NAF_CONN_TYPE_CLIENT) ? "CLIENT" : "",
@@ -439,7 +439,7 @@ static int connhandler_incomingconn(nbio_fd_t *fdt)
 	lconn->lasttx_hard++;
 
 	if (naf_conn__debug > 1)
-		dvprintf(ourmodule, "connhandler_incomingconn(%p [fd %d, cid %d])\n", fdt, fdt->fd, lconn->cid);
+		tvprintf(ourmodule, "connhandler_incomingconn(%p [fd %d, cid %d])\n", fdt, fdt->fd, lconn->cid);
 
 
 	sfd = nbio_getincomingconn(&gnb, fdt, &sa, &salen);
@@ -447,7 +447,7 @@ static int connhandler_incomingconn(nbio_fd_t *fdt)
 
 #ifdef EMFILE
 		if (errno == EMFILE) { /* too many open files */
-			dprintf(ourmodule, "cannot accept incoming connection; too many open files\n");
+			tprintf(ourmodule, "cannot accept incoming connection; too many open files\n");
 			return 0;
 		}
 #endif
@@ -458,7 +458,7 @@ static int connhandler_incomingconn(nbio_fd_t *fdt)
 				 NAF_CONN_TYPE_CLIENT|NAF_CONN_TYPE_DETECTING);
 	if (!nconn) {
 		if (naf_conn__debug > 0)
-			dprintf(ourmodule, "connhandler_incoming: addconn failed\n");
+			tprintf(ourmodule, "connhandler_incoming: addconn failed\n");
 		nbio_sfd_close(&gnb, sfd);
 		return 0;
 	}
@@ -466,7 +466,7 @@ static int connhandler_incomingconn(nbio_fd_t *fdt)
 	if (lconn->owner) {
 
 		if (naf_conn__debug > 0) {
-			dvprintf(ourmodule, "[fd %d, cid %lu] forcing ownership to %s\n", nconn->fdt->fd, nconn->cid, lconn->owner);
+			tvprintf(ourmodule, "[fd %d, cid %lu] forcing ownership to %s\n", nconn->fdt->fd, nconn->cid, lconn->owner);
 		}
 		nconn->owner = lconn->owner;
 
@@ -499,7 +499,7 @@ static int connhandler(void *nbv, int event, nbio_fd_t *fdt)
 		return -1;
 
 	if (naf_conn__debug)
-		dvprintf(ourmodule, "connhandler(event = %d, fdt = %p [fd %d])\n", event, fdt, fdt->fd);
+		tvprintf(ourmodule, "connhandler(event = %d, fdt = %p [fd %d])\n", event, fdt, fdt->fd);
 
 	if (event == NBIO_EVENT_READ)
 		return connhandler_read(fdt);
@@ -524,7 +524,7 @@ static struct nafconn *naf_conn_alloc(void)
 	nc->cid = naf_conn__nextcid++;
 
 	if (naf_conn__debug)
-		dvprintf(ourmodule, "naf_conn_alloc: %p (cid %d)\n", nc, nc->cid);
+		tvprintf(ourmodule, "naf_conn_alloc: %p (cid %d)\n", nc, nc->cid);
 
 	naf_conn__openconns++;
 
@@ -549,14 +549,14 @@ static int fillendpoints(struct nafconn *conn)
 
 		if ((getsockname(conn->fdt->fd, (struct sockaddr *)&conn->localendpoint, &localsize) == 0)) {
 			if (naf_conn__debug) {
-				dvprintf(ourmodule, "[fd %d, cid %d] local = %s:%u\n", conn->fdt->fd, conn->cid, inet_ntoa(((struct sockaddr_in *)&conn->localendpoint)->sin_addr), ntohs(((struct sockaddr_in *)&conn->localendpoint)->sin_port));
+				tvprintf(ourmodule, "[fd %d, cid %d] local = %s:%u\n", conn->fdt->fd, conn->cid, inet_ntoa(((struct sockaddr_in *)&conn->localendpoint)->sin_addr), ntohs(((struct sockaddr_in *)&conn->localendpoint)->sin_port));
 			}
 		}
 
 		/* This won't work for listeners */
 		if ((getpeername(conn->fdt->fd, (struct sockaddr *)&conn->remoteendpoint, &remotesize) == 0)) {
 			if (naf_conn__debug) {
-				dvprintf(ourmodule, "[fd %d, cid %d] remote = %s:%u\n", conn->fdt->fd, conn->cid, inet_ntoa(((struct sockaddr_in *)&conn->remoteendpoint)->sin_addr), ntohs(((struct sockaddr_in *)&conn->remoteendpoint)->sin_port));
+				tvprintf(ourmodule, "[fd %d, cid %d] remote = %s:%u\n", conn->fdt->fd, conn->cid, inet_ntoa(((struct sockaddr_in *)&conn->remoteendpoint)->sin_addr), ntohs(((struct sockaddr_in *)&conn->remoteendpoint)->sin_port));
 			}
 		}
 
@@ -570,7 +570,7 @@ static int fillendpoints(struct nafconn *conn)
 #ifdef HAVE_LINUX_NETFILTER_IPV4_H
 		if ((getsockopt(conn->fdt->fd, IPPROTO_IP, SO_ORIGINAL_DST, &conn->origremoteendpoint, &origremotesize) == 0)) {
 			if (naf_conn__debug) {
-				dvprintf(ourmodule, "[fd %d, cid %d] original remote = %s:%u\n", conn->fdt->fd, conn->cid, inet_ntoa(((struct sockaddr_in *)&conn->origremoteendpoint)->sin_addr), ntohs(((struct sockaddr_in *)&conn->origremoteendpoint)->sin_port));
+				tvprintf(ourmodule, "[fd %d, cid %d] original remote = %s:%u\n", conn->fdt->fd, conn->cid, inet_ntoa(((struct sockaddr_in *)&conn->origremoteendpoint)->sin_addr), ntohs(((struct sockaddr_in *)&conn->origremoteendpoint)->sin_port));
 			}
 		}
 #else
@@ -603,7 +603,7 @@ struct nafconn *naf_conn_addconn(struct nafmodule *mod, nbio_sockfd_t fd, naf_u3
 	 * a crappy solution.)
 	 */
 	if (!(newconn->fdt = nbio_addfd(&gnb, nbtype, fd, 0, connhandler, (void *)newconn, 1, 220))) {
-		dperror(NULL, "nbio_addfd");
+		tperror(NULL, "nbio_addfd");
 		naf_conn_free(newconn);
 		return NULL;
 	}
@@ -669,7 +669,7 @@ static void dumpbox(struct nafmodule *mod, const char *prefix, naf_conn_cid_t ci
 			} else
 				break;
 		}
-		dvprintf(mod, "%s\n", tmpstr);
+		tvprintf(mod, "%s\n", tmpstr);
 	}
 }
 
@@ -680,7 +680,7 @@ int naf_conn_reqread(struct nafconn *conn, unsigned char *buf, int buflen, int o
 		return -1;
 
 	if (naf_conn__debug > 2)
-		dvprintf(ourmodule, "adding read buffer (%p) of length %d (offset %d) to cid %ld\n", buf, buflen, offset, conn->cid);
+		tvprintf(ourmodule, "adding read buffer (%p) of length %d (offset %d) to cid %ld\n", buf, buflen, offset, conn->cid);
 
 	return nbio_addrxvector(&gnb, conn->fdt, buf, buflen, offset);
 }
@@ -775,7 +775,7 @@ static int finishconnect(struct nafconn *conn)
 	 * return zero, anything else means it didn't connect.
 	 */
 	if (nbio_sfd_read(&gnb, conn->fdt->fd, &blah, 0) != 0) {
-		dperror(ourmodule, "delayed connect (false alarm)");
+		tperror(ourmodule, "delayed connect (false alarm)");
 		return -1;
 	}
 
@@ -786,11 +786,11 @@ static int finishconnect(struct nafconn *conn)
 	if (conn->owner && conn->owner->connready) {
 		if (conn->owner->connready(conn->owner, conn,
 					   NAF_CONN_READY_CONNECTED) == -1) {
-			dvprintf(ourmodule, "error on %d (CONNECTED)\n", conn->fdt->fd);
+			tvprintf(ourmodule, "error on %d (CONNECTED)\n", conn->fdt->fd);
 			return -1;
 		}
 	} else {
-		dvprintf(ourmodule, "no owner for %d!\n", conn->fdt->fd);
+		tvprintf(ourmodule, "no owner for %d!\n", conn->fdt->fd);
 		return -1;
 	}
 
@@ -850,16 +850,16 @@ int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, cons
 	}
 
 	if (naf_conn__debug)
-		dvprintf(mod, "starting non-blocking connect to %s port %d\n", newhost, port);
+		tvprintf(mod, "starting non-blocking connect to %s port %d\n", newhost, port);
 
 
 	/* XXX XXX XXX this blocks!!! */
 	if (!(h = gethostbyname(newhost))) {
-		dvprintf(mod, "gethostbyname failed for %s\n", newhost);
+		tvprintf(mod, "gethostbyname failed for %s\n", newhost);
 		return -1;
 	}
 	if (naf_conn__debug)
-		dvprintf(mod, "gethostbyname finished (%s)\n", newhost);
+		tvprintf(mod, "gethostbyname finished (%s)\n", newhost);
 
 	memset(&sai, 0, sizeof(struct sockaddr_in));
 	memcpy(&sai.sin_addr.s_addr, h->h_addr, 4);
@@ -875,19 +875,19 @@ int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, cons
 	 * though.
 	 */
 	if ((sfd = nbio_sfd_new_stream(&gnb)) == -1) {
-		dvprintf(mod, "nbio_sock_new_stream() failed: %s\n", strerror(errno));
+		tvprintf(mod, "nbio_sock_new_stream() failed: %s\n", strerror(errno));
 		return -1;
 	}
 
 	if (nbio_sfd_setnonblocking(&gnb, sfd) == -1) {
-		dvprintf(mod, "nbio_sfd_setnonblocking() failed: %s\n", strerror(errno));
+		tvprintf(mod, "nbio_sfd_setnonblocking() failed: %s\n", strerror(errno));
 		nbio_sfd_close(&gnb, sfd);
 		return -1;
 	}
 
 	status = nbio_sfd_connect(&gnb, sfd, (struct sockaddr *)&sai, sizeof(sai));
 	if ((status == -1) && (errno != EINPROGRESS)) {
-		dvprintf(mod, "nbio_sfd_connect() failed: %s\n", strerror(errno));
+		tvprintf(mod, "nbio_sfd_connect() failed: %s\n", strerror(errno));
 		nbio_sfd_close(&gnb, sfd);
 		return -1;
 	} else if (status == 0)
@@ -919,7 +919,7 @@ int naf_conn_startconnect(struct nafmodule *mod, struct nafconn *localconn, cons
 	localconn->endpoint->endpoint = localconn;
 
 	if (naf_conn__debug)
-		dvprintf(mod, "connection started (%d)\n", !!inprogress);
+		tvprintf(mod, "connection started (%d)\n", !!inprogress);
 
 	return 0;
 }
@@ -1137,7 +1137,7 @@ static int timerhandler_matcher(struct nafmodule *mod, struct nafconn *conn, con
 	naf_conn_setraw(conn, 0); /* clear raw mode */
 
 	if (naf_module__protocoldetecttimeout(mod, conn) <= 0) {
-		dvprintf(mod, "no one wants to deal with timed out protocol detect on %d\n", conn->fdt->fd);
+		tvprintf(mod, "no one wants to deal with timed out protocol detect on %d\n", conn->fdt->fd);
 		naf_conn_schedulekill(conn);
 	}
 
@@ -1160,12 +1160,12 @@ static struct nafconn *listenestablish(struct nafmodule *mod, const char *addr, 
 	struct nafconn *retconn = NULL;
 
 	if ((sfd = nbio_sfd_newlistener(&gnb, addr, portnum)) == -1) {
-		dprintf(mod, "unable to create listener socket\n");
+		tprintf(mod, "unable to create listener socket\n");
 		return NULL;
 	}
 
 	if (!(retconn = naf_conn_addconn(nowner, sfd, NAF_CONN_TYPE_LISTENER))) {
-		dprintf(mod, "unable to add connection for listener\n");
+		tprintf(mod, "unable to add connection for listener\n");
 		nbio_sfd_close(&gnb, sfd);
 		return NULL;
 	}
@@ -1257,7 +1257,7 @@ static int cleanlisteners_matcher(struct nafmodule *mod, struct nafconn *conn, c
 		return 0;
 
 	if (!listenport_isconfigured(mod, addr, port)) {
-		dvprintf(mod, "removing unconfigured listen port %s:%u\n", addr ? addr : "any", port);
+		tvprintf(mod, "removing unconfigured listen port %s:%u\n", addr ? addr : "any", port);
 		naf_conn_free(conn);
 	}
 
@@ -1280,7 +1280,7 @@ static void cleanlisteners(struct nafmodule *mod)
 	/* Add newly configured ports */
 
 	if (!(conf = naf_config_getmodparmstr(mod, "listenports"))) {
-		dprintf(mod, "WARNING: no listen ports configured\n");
+		tprintf(mod, "WARNING: no listen ports configured\n");
 		return;
 	}
 
@@ -1314,17 +1314,17 @@ static void cleanlisteners(struct nafmodule *mod)
 		}
 
 		if (owner && !nconnowner) {
-			dvprintf(mod, "unable to find module '%s' for listener port %d\n", owner, portnum);
+			tvprintf(mod, "unable to find module '%s' for listener port %d\n", owner, portnum);
 			goahead = 0;
 		}
 
 		if (portnum == -1) {
-			dprintf(mod, "invalid listener port specification\n");
+			tprintf(mod, "invalid listener port specification\n");
 			goahead = 0;
 		}
 
 		if (findlistenport(mod, addr, (naf_u16_t)atoi(cur))) {
-			dvprintf(mod, "duplicate listener specified on port %d\n", portnum);
+			tvprintf(mod, "duplicate listener specified on port %d\n", portnum);
 			goahead = 0;
 		}
 
@@ -1332,7 +1332,7 @@ static void cleanlisteners(struct nafmodule *mod)
 			nconn = listenestablish(mod, addr, (naf_u16_t)portnum, nconnowner);
 
 		if (nconn) {
-			dvprintf(mod, "listening on port %d (for %s)\n",
+			tvprintf(mod, "listening on port %d (for %s)\n",
 					portnum,
 					nconnowner ? nconnowner->name : "all");
 		}
@@ -1351,7 +1351,7 @@ static void signalhandler(struct nafmodule *mod, struct nafmodule *source, int s
 		char *extip;
 
 		if ((extip = naf_config_getmodparmstr(mod, "extipaddr")))
-			dvprintf(mod, "assuming incoming connections on %s\n", extip);
+			tvprintf(mod, "assuming incoming connections on %s\n", extip);
 
 		NAFCONFIG_UPDATEINTMODPARMDEF(mod, "debug", naf_conn__debug, NAF_CONN_DEBUG_DEFAULT);
 

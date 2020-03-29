@@ -308,7 +308,7 @@ toscar_snachandler_0004_0006(struct nafmodule *mod, struct nafconn *conn, struct
 
 	if ((naf_conn_tag_fetch(mod, conn->endpoint, "conn.screenname", NULL, (void **)&srcsn) == -1) || !srcsn) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] 0004/0006: unable to find conn.screenname tag\n", conn->cid);
+			tvprintf(mod, "[cid %lu] 0004/0006: unable to find conn.screenname tag\n", conn->cid);
 		ret = HRET_ERROR;
 		goto out;
 	}
@@ -357,7 +357,7 @@ toscar_snachandler_0004_0006(struct nafmodule *mod, struct nafconn *conn, struct
 		}
 	} else {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] [%s] ignoring outgoing message to '%s' on unknown channel %u\n", conn->cid, srcsn, destsn, msgchan);
+			tvprintf(mod, "[cid %lu] [%s] ignoring outgoing message to '%s' on unknown channel %u\n", conn->cid, srcsn, destsn, msgchan);
 		ret = HRET_FORWARD;
 		goto out;
 	}
@@ -419,7 +419,7 @@ toscar_snachandler_0004_0007(struct nafmodule *mod, struct nafconn *conn, struct
 
 	if ((naf_conn_tag_fetch(mod, conn, "conn.screenname", NULL, (void **)&destsn) == -1) || !destsn) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] 0004/0007: unable to find conn.screenname tag\n", conn->cid);
+			tvprintf(mod, "[cid %lu] 0004/0007: unable to find conn.screenname tag\n", conn->cid);
 		ret = HRET_ERROR;
 		goto out;
 	}
@@ -467,7 +467,7 @@ toscar_snachandler_0004_0007(struct nafmodule *mod, struct nafconn *conn, struct
 		}
 	} else {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] [%s] ignoring incoming message from '%s' on unknown channel %u\n", conn->cid, destsn, srcinfo->sn, msgchan);
+			tvprintf(mod, "[cid %lu] [%s] ignoring incoming message from '%s' on unknown channel %u\n", conn->cid, destsn, srcinfo->sn, msgchan);
 		ret = HRET_FORWARD;
 		goto out;
 	}

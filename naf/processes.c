@@ -172,7 +172,7 @@ void naf_childproc__sigchild_handler(void)
 		return;
 
 	if (!(cp = naf_childproc__remove(pid))) {
-		dvprintf(NULL, "unknown child died (pid %d)\n", pid);
+		tvprintf(NULL, "unknown child died (pid %d)\n", pid);
 		return;
 	}
 
@@ -186,7 +186,7 @@ void naf_childproc__sigchild_handler(void)
 		cp->exitinfo.value = WTERMSIG(status);
 	}
 
-	dvprintf(NULL, "child %d %s (%s %d) (owned by %s)\n",
+	tvprintf(NULL, "child %d %s (%s %d) (owned by %s)\n",
 			cp->pid,
 			(cp->exitinfo.status == NAF_CHILDPROC_EXITSTATUS_EXITED) ? "exited" : "terminated by signal",
 			(cp->exitinfo.status == NAF_CHILDPROC_EXITSTATUS_EXITED) ? "returned code" : "signal number",

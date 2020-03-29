@@ -113,7 +113,7 @@ naf_net_if__configure(struct nafnet_if *iff)
 		/* XXX do checking here? (make sure in isn't net or bcast) */
 		if ((ina.s_addr == 0) || (inam.s_addr == 0) ||
 		    (naf_net_if_addr_add_ipv4(iff, ina.s_addr, inam.s_addr) == -1)) {
-			dvprintf(naf_net__module, "failed to add address %s to %s\n", inet_ntoa(ina), iff->if_name);
+			tvprintf(naf_net__module, "failed to add address %s to %s\n", inet_ntoa(ina), iff->if_name);
 		}
 	}
 #endif /* def NAFNET_USE_IPV4 */
@@ -128,7 +128,7 @@ naf_net_if__configure(struct nafnet_if *iff)
 		p = naf_config_getmodparmstr(naf_net__module, pn);
 		if (p) {
 			if ((nmtu = atoi(p)) == -1)
-				dvprintf(naf_net__module, "invalid MTU configured for %s\n", iff->if_name);
+				tvprintf(naf_net__module, "invalid MTU configured for %s\n", iff->if_name);
 			else
 				iff->if_mtu = (naf_u16_t)nmtu;
 		}
@@ -145,14 +145,14 @@ naf_net_if__configure(struct nafnet_if *iff)
 			else if (strcasecmp(p, "down") == 0)
 				nstate = 0;
 			else
-				dvprintf(naf_net__module, "unknown state configured for %s\n", iff->if_name);
+				tvprintf(naf_net__module, "unknown state configured for %s\n", iff->if_name);
 		}
 		if ((nstate == 1 && !(iff->if_flags & NAFNET_IFFLAG_UP))) {
-			dvprintf(naf_net__module, "bringing up interface %s\n", iff->if_name);
+			tvprintf(naf_net__module, "bringing up interface %s\n", iff->if_name);
 			iff->if_flags |= NAFNET_IFFLAG_UP;
 			naf_ipv4_event_ifup(iff); /* XXX need better API (this way will not update when addresses change without up/down */
 		} else if ((nstate == 0) && (iff->if_flags & NAFNET_IFFLAG_UP)) {
-			dvprintf(naf_net__module, "taking down interface %s\n", iff->if_name);
+			tvprintf(naf_net__module, "taking down interface %s\n", iff->if_name);
 			iff->if_flags &= ~NAFNET_IFFLAG_UP;
 			naf_ipv4_event_ifdown(iff); /* XXX need better API */
 		} else

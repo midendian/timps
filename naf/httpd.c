@@ -179,7 +179,7 @@ static int handlefirstreqline(struct nafmodule *mod, struct nafconn *conn, char 
 	if ((strncmp(buf, "GET ", 4) != 0) &&
 			(strncmp(buf, "POST ", 5) != 0) &&
 			(naf_httpd__debug > 0)) {
-		dvprintf(mod, "unrecognized request: \"%s\"\n", buf);
+		tvprintf(mod, "unrecognized request: \"%s\"\n", buf);
 		return -1;
 	}
 
@@ -189,7 +189,7 @@ static int handlefirstreqline(struct nafmodule *mod, struct nafconn *conn, char 
 	prot = http_getnextarg(mod, &cur);
 
 	if (naf_httpd__debug > 0)
-		dvprintf(mod, "request: req = '%s', file = '%s', prot = '%s'\n", req, file, prot);
+		tvprintf(mod, "request: req = '%s', file = '%s', prot = '%s'\n", req, file, prot);
 
 	if ((strcasecmp(req, "GET") == 0) && file && strlen(file)) {
 
@@ -225,7 +225,7 @@ static int handleheaderline(struct nafmodule *mod, struct nafconn *conn, char *b
 	value = nextnonwhite(value);
 
 	if (naf_httpd__debug > 0)
-		dvprintf(mod, "header: name = '%s', value = '%s'\n", name, value);
+		tvprintf(mod, "header: name = '%s', value = '%s'\n", name, value);
 
 	if (!name || !strlen(name))
 		return 0;
@@ -234,12 +234,12 @@ static int handleheaderline(struct nafmodule *mod, struct nafconn *conn, char *b
 		int clen;
 
 		if (!value || ((clen = atoi(value)) < 0)) {
-			dprintf(mod, "invalid Content-Length header\n");
+			tprintf(mod, "invalid Content-Length header\n");
 			return -1;
 		}
 
 		if (clen > SOAPMAXREQPAYLOADLEN) {
-			dvprintf(mod, "rejecting request with huge Content-Length (wanted %d)\n", clen);
+			tvprintf(mod, "rejecting request with huge Content-Length (wanted %d)\n", clen);
 			return -1;
 		}
 
@@ -431,7 +431,7 @@ static int dorequest_get(struct nafmodule *mod, struct nafconn *conn, char *file
 		hp = naf_httpd_page__find_loose(mod, file);
 		if (!hp) {
 			if (naf_httpd__debug > 0)
-				dvprintf(mod, "no handler matching page '%s'\n", file);
+				tvprintf(mod, "no handler matching page '%s'\n", file);
 			return send404(mod, conn);
 		}
 	}
@@ -486,7 +486,7 @@ static void handlenafrpc_startelement(void *userdata, const char *name, const ch
 
 	if (strcasecmp(name, "SOAP-ENV:Envelope") != 0) {
 		if (naf_httpd__debug > 0)
-			dvprintf(info->mod, "(start) unknown outer tag '%s'\n", name);
+			tvprintf(info->mod, "(start) unknown outer tag '%s'\n", name);
 		return;
 	}
 
@@ -553,7 +553,7 @@ static void handlenafrpc_endelement(void *userdata, const char *name)
 
 	if (strcasecmp(name, "SOAP-ENV:Envelope") != 0) {
 		if (naf_httpd__debug > 0)
-			dvprintf(info->mod, "(end) unknown outer tag '%s'\n", name);
+			tvprintf(info->mod, "(end) unknown outer tag '%s'\n", name);
 	}
 
 	/* info.x is picked up and returned to the caller later */
@@ -793,7 +793,7 @@ static int handlenafrpc(struct nafmodule *mod, struct nafconn *conn, unsigned ch
 
 		} else {
 
-			dvprintf(mod, "unknown datatype '%s'\n", parmtype);
+			tvprintf(mod, "unknown datatype '%s'\n", parmtype);
 		}
 
 	}
@@ -863,7 +863,7 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 		int buflen;
 
 		if (naf_conn_takewrite(conn, &buf, &buflen) < 0) {
-			dprintf(mod, "connready: takewrite failed\n");
+			tprintf(mod, "connready: takewrite failed\n");
 			return -1;
 		}
 		naf_free(mod, buf);
@@ -876,7 +876,7 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 		int buflen;
 
 		if (naf_conn_takeread(conn, &buf, &buflen) == -1) {
-			dprintf(mod, "connready: takeread failed\n");
+			tprintf(mod, "connready: takeread failed\n");
 			return -1;
 		}
 
@@ -949,7 +949,7 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 			int ret;
 
 			if (naf_httpd__debug > 0)
-				dvprintf(mod, "received %d bytes of HTTP payload\n", buflen);
+				tvprintf(mod, "received %d bytes of HTTP payload\n", buflen);
 			conn->state = SOAPCONN_STATE_PROCESSING;
 			if (reqmonitorbuf(mod, conn) == -1)
 				return -1;
@@ -962,12 +962,12 @@ static int connready(struct nafmodule *mod, struct nafconn *conn, naf_u16_t what
 
 		} else if (conn->state == SOAPCONN_STATE_PROCESSING) {
 
-			dprintf(mod, "received data from client while in processing state\n");
+			tprintf(mod, "received data from client while in processing state\n");
 			return -1;
 
 		} else {
 
-			dvprintf(mod, "connection in unknown state %d\n", conn->state);
+			tvprintf(mod, "connection in unknown state %d\n", conn->state);
 
 			return -1;
 		}
@@ -995,7 +995,7 @@ static void freetag(struct nafmodule *mod, void *object, const char *tagname, ch
 
 	} else {
 
-		dvprintf(mod, "XXX unknown tag '%s'\n", tagname);
+		tvprintf(mod, "XXX unknown tag '%s'\n", tagname);
 
 	}
 

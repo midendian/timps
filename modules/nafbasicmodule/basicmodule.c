@@ -27,7 +27,7 @@ static struct nafmodule *ourmodule = NULL;
 static int modinit(struct nafmodule *mod)
 {
 
-	dprintf(mod, "module initializing!\n");
+	tprintf(mod, "module initializing!\n");
 
 	return 0;
 }
@@ -35,7 +35,7 @@ static int modinit(struct nafmodule *mod)
 static int modshutdown(struct nafmodule *mod)
 {
 
-	dprintf(mod, "module shutting down!\n");
+	tprintf(mod, "module shutting down!\n");
 
 	return 0;
 }
