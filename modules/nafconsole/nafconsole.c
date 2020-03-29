@@ -588,7 +588,7 @@ static int modinit(struct nafmodule *mod)
 	 * Yay for "everything's a file".
 	 */
 	if (!(in = naf_conn_addconn(mod, STDIN_FILENO, NAF_CONN_TYPE_RAW|NAF_CONN_TYPE_SERVER|NAF_CONN_TYPE_READRAW))) {
-		dprintf(mod, "unable to create nafconn for stdin\n");
+		tprintf(mod, "unable to create nafconn for stdin\n");
 		return -1;
 	}
 
@@ -673,7 +673,7 @@ static void macro_syncconf__addnew(const char *inlist)
 
 			def = macro_syncconf__getexpansion(c);
 			if (!def) {
-				dvprintf(nafconsole__module, "configuration error: macro '%s' enabled but not defined\n", c);
+				tvprintf(nafconsole__module, "configuration error: macro '%s' enabled but not defined\n", c);
 				continue;
 			}
 

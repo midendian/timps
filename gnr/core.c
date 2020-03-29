@@ -190,7 +190,7 @@ static void freetag(struct nafmodule *mod, void *object, const char *tagname, ch
 
 	} else {
 
-		dvprintf(mod, "freetag: unknown tag '%s'\n", tagname);
+		tvprintf(mod, "freetag: unknown tag '%s'\n", tagname);
 
 	}
 

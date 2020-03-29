@@ -47,13 +47,13 @@
 int nafeventv(struct nafmodule *source, naf_event_t event, va_list inap);
 int nafevent(struct nafmodule *mod, naf_event_t event, ...);
 
-#define dprintf(p, x) nafevent(p, NAF_EVENT_GENERICOUTPUT, x)
+#define tprintf(p, x) nafevent(p, NAF_EVENT_GENERICOUTPUT, x)
 #ifdef NOVAMACROS
-int dvprintf(struct nafmodule *mod, ...);
+int tvprintf(struct nafmodule *mod, ...);
 #else
-#define dvprintf(p, x, y...) nafevent(p, NAF_EVENT_GENERICOUTPUT, x, y)
+#define tvprintf(p, x, y...) nafevent(p, NAF_EVENT_GENERICOUTPUT, x, y)
 #endif
-#define dperror(p, x) nafevent(p, NAF_EVENT_DEBUGOUTPUT, "%s: %s\n", x, strerror(errno))
+#define tperror(p, x) nafevent(p, NAF_EVENT_DEBUGOUTPUT, "%s: %s\n", x, strerror(errno))
 
 #endif /* __NAF_EVENTS_H__ */
 

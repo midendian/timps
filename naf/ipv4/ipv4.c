@@ -130,7 +130,7 @@ naf_ipv4_route_add(naf_u32_t dest, naf_u32_t gw, naf_u32_t mask, naf_u16_t flags
 	rt = naf_ipv4_route_find(dest, gw, mask, metric);
 	if (rt) {
 		if (naf_ipv4__debug)
-			dvprintf(naf_ipv4__module, "route already exists (%08lx/%08lx via %08lx metric %d\n",dest, mask, gw, metric);
+			tvprintf(naf_ipv4__module, "route already exists (%08lx/%08lx via %08lx metric %d\n",dest, mask, gw, metric);
 		return -1;
 	}
 	rt = naf_ipv4_route__alloc();
@@ -408,7 +408,7 @@ naf_ipv4__parseoptions(naf_sbuf_t *sb, struct nafnet_ip *ip)
 
 		} else {
 			if (naf_ipv4__debug)
-				dvprintf(naf_ipv4__module, "unknown IP option 0x%02x from 0x%08lx\n", type, ip->ip_saddr);
+				tvprintf(naf_ipv4__module, "unknown IP option 0x%02x from 0x%08lx\n", type, ip->ip_saddr);
 			break; /* can't continue */
 		}
 
@@ -478,7 +478,7 @@ naf_ipv4_input(struct nafmodule *inmod, struct nafnet_if *recvif, naf_u8_t *buf,
 	sb.sbuf_buflen = hdrlen; /* trim down this sbuf */
 
 	if (naf_ipv4__debug > 1) {
-		dvprintf(naf_ipv4__module, "received IP packet: ver = %d, ihl = %d, tot_len = %d, ttl = %d, saddr = 0x%08lx, daddr = 0x%08lx, protocol %d, csum 0x%04x\n",
+		tvprintf(naf_ipv4__module, "received IP packet: ver = %d, ihl = %d, tot_len = %d, ttl = %d, saddr = 0x%08lx, daddr = 0x%08lx, protocol %d, csum 0x%04x\n",
 							iph.ip_v, iph.ip_hl,
 							iph.ip_len, iph.ip_ttl,
 							iph.ip_src.s_addr,
@@ -493,7 +493,7 @@ naf_ipv4_input(struct nafmodule *inmod, struct nafnet_if *recvif, naf_u8_t *buf,
 		goto out;
 	if (naf_ipv4__hdrcsum(buf, hdrlen) != iph.ip_sum) {
 		if (naf_ipv4__debug)
-			dvprintf(naf_ipv4__module, "bad IPv4 checksum from 0x%08lx\n", iph.ip_src.s_addr);
+			tvprintf(naf_ipv4__module, "bad IPv4 checksum from 0x%08lx\n", iph.ip_src.s_addr);
 		goto out;
 	}
 

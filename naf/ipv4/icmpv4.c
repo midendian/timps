@@ -144,23 +144,23 @@ naf_icmpv4_input(struct nafmodule *mod, struct nafnet_ip *ip)
 	if (ic.ic_type == ICMP_TYPE_ECHOREPLY) {
 
 		if (naf_icmpv4__debug)
-			dvprintf(mod, "ICMP echo reply from 0x%08lx\n", ip->ip_saddr);
+			tvprintf(mod, "ICMP echo reply from 0x%08lx\n", ip->ip_saddr);
 
 	} else if (ic.ic_type == ICMP_TYPE_DESTUNREACHABLE) {
 
 		if (naf_icmpv4__debug)
-			dvprintf(mod, "ICMP Destination Unreachable from 0x%08lx (code %d)\n", ip->ip_saddr, ic.ic_code);
+			tvprintf(mod, "ICMP Destination Unreachable from 0x%08lx (code %d)\n", ip->ip_saddr, ic.ic_code);
 
 	} else if (ic.ic_type == ICMP_TYPE_ECHO) {
 
 		if (naf_icmpv4__debug)
-			dvprintf(mod, "ICMP Echo Request from 0x%08lx\n", ip->ip_saddr);
+			tvprintf(mod, "ICMP Echo Request from 0x%08lx\n", ip->ip_saddr);
 
 		sendechoreply(mod, ip, &ic);
 
 	} else {
 
-		dvprintf(mod, "unknown ICMP type %d from 0x%08lx\n", ic.ic_type, ip->ip_saddr);
+		tvprintf(mod, "unknown ICMP type %d from 0x%08lx\n", ic.ic_type, ip->ip_saddr);
 		ret = -1;
 	}
 

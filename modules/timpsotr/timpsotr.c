@@ -189,7 +189,7 @@ totr_uiop__create_privkey(void *opdata, const char *accountname, const char *pro
 	char *fingerprint;
 
 	if (timps_otr__debug > 0)
-		dvprintf(mod, "creating private key for %s[%s]\n", accountname, protocol);
+		tvprintf(mod, "creating private key for %s[%s]\n", accountname, protocol);
 
 	if (!(pkfn = totr_mkfilename(mod, TOTR_PRIVATEKEYFN)))
 		return;
@@ -253,7 +253,7 @@ totr_uiop__notify(void *opdata, OtrlNotifyLevel level, const char *title, const 
 			primary ? primary : "",
 			secondary ? secondary : "");
 #else
-	dvprintf(mod, "notification from libotr: %s%s%s: %s (%s)\n",
+	tvprintf(mod, "notification from libotr: %s%s%s: %s (%s)\n",
 			(level == OTRL_NOTIFY_ERROR) ? "ERROR" : "",
 			(level == OTRL_NOTIFY_WARNING) ? "WARNING" : "",
 			(level == OTRL_NOTIFY_INFO) ? "Note" : "",
@@ -304,7 +304,7 @@ totr_uiop__confirm_fingerprint(void *opdata, const char *username, const char *p
 	otrl_privkey_hash_to_human(fingerprint, kem->key_fingerprint);
 
 	if (timps_otr__debug > 0) {
-		dvprintf(mod, "received fingerprint for %s[%s]: %s\n",
+		tvprintf(mod, "received fingerprint for %s[%s]: %s\n",
 					username, protocol, fingerprint);
 	}
 
@@ -408,7 +408,7 @@ totr_uiop__log_message(void *opdata, const char *message)
 	 * directly to them.
 	 */
 	/* Comes with \n on the end */
-	dvprintf(mod, "message from libotr: %s", message);
+	tvprintf(mod, "message from libotr: %s", message);
 
 	return;
 }
@@ -612,7 +612,7 @@ freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, 
 	if (strcmp(tagname, "gnrmsg.newotrmsgtext") == 0)
 		naf_free(mod, (char *)tagdata);
 	else
-		dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
+		tvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
 
 	return;
 }
@@ -624,7 +624,7 @@ modinit(struct nafmodule *mod)
 	timps_otr__module = mod;
 
 	if (gnr_msg_register(mod, totr_gnroutputfunc) == -1) {
-		dprintf(mod, "modinit: gsr_msg_register failed\n");
+		tprintf(mod, "modinit: gsr_msg_register failed\n");
 		return -1;
 	}
 	gnr_msg_addmsghandler(mod, GNR_MSG_MSGHANDLER_STAGE_ROUTING, 30, totr_msgroutinghandler, "Off-the-record messaging");

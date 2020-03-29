@@ -75,7 +75,7 @@ static void dumpbox(struct nafmodule *mod, const char *prefix, naf_conn_cid_t ci
 			} else
 				break;
 		}
-		dvprintf(mod, "%s\n", tmpstr);
+		tvprintf(mod, "%s\n", tmpstr);
 	}
 }
 
@@ -91,7 +91,7 @@ static void
 freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, void *tagdata)
 {
 
-	dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
+	tvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
 
 	return;
 }
@@ -103,7 +103,7 @@ modinit(struct nafmodule *mod)
 	timps__module = mod;
 
 	if (gnr_msg_register(mod, NULL /* no outputfunc */) == -1) {
-		dprintf(mod, "modinit: gsr_msg_register failed\n");
+		tprintf(mod, "modinit: gsr_msg_register failed\n");
 		return -1;
 	}
 	gnr_msg_addmsghandler(mod, GNR_MSG_MSGHANDLER_STAGE_ROUTING, 75, timps_msgrouting, "Implement auditing rules.");

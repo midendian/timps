@@ -113,7 +113,7 @@ toscar_gnroutputfunc(struct nafmodule *mod, struct gnrmsg *gm, struct gnrmsg_han
 {
 
 	if (timps_oscar__debug > 1) {
-		dvprintf(mod, "toscar_gnroutputfunc: type = %d, to = '%s'[%s](%d), from = '%s'[%s](%d), msg = (%s) '%s'\n",
+		tvprintf(mod, "toscar_gnroutputfunc: type = %d, to = '%s'[%s](%d), from = '%s'[%s](%d), msg = (%s) '%s'\n",
 				gm->type,
 				gm->srcname, gm->srcnameservice,
 				gmhi->srcnode ? gmhi->srcnode->metric : -1,
@@ -128,7 +128,7 @@ toscar_gnroutputfunc(struct nafmodule *mod, struct gnrmsg *gm, struct gnrmsg_han
 
 		if (!(conn = toscar__findconn(mod, gmhi->destnode->name))) {
 			if (timps_oscar__debug > 0)
-				dvprintf(mod, "gnroutputfunc(local): unable to find connection for local node '%s'[%s]\n", gmhi->destnode->name, gmhi->destnode->service);
+				tvprintf(mod, "gnroutputfunc(local): unable to find connection for local node '%s'[%s]\n", gmhi->destnode->name, gmhi->destnode->service);
 			return -1;
 		}
 
@@ -139,7 +139,7 @@ toscar_gnroutputfunc(struct nafmodule *mod, struct gnrmsg *gm, struct gnrmsg_han
 
 		if (!(conn = toscar__findconn(mod, gmhi->srcnode->name))) {
 			if (timps_oscar__debug > 0)
-				dvprintf(mod, "gnroutputfunc(forward): unable to find connection for local node '%s'[%s]\n", gmhi->srcnode->name, gmhi->srcnode->service);
+				tvprintf(mod, "gnroutputfunc(forward): unable to find connection for local node '%s'[%s]\n", gmhi->srcnode->name, gmhi->srcnode->service);
 			return -1;
 		}
 
@@ -192,7 +192,7 @@ freetag(struct nafmodule *mod, void *object, const char *tagname, char tagtype, 
 		touserinfo_free(mod, toui);
 
 	} else
-		dvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
+		tvprintf(mod, "freetag: unknown tagname '%s'\n", tagname);
 
 	return;
 }
@@ -258,7 +258,7 @@ modinit(struct nafmodule *mod)
 	timps_oscar__module = mod;
 
 	if (gnr_msg_register(mod, toscar_gnroutputfunc) == -1) {
-		dprintf(mod, "modinit: gsr_msg_register failed\n");
+		tprintf(mod, "modinit: gsr_msg_register failed\n");
 		return -1;
 	}
 	gnr_msg_addmsghandler(mod, GNR_MSG_MSGHANDLER_STAGE_ROUTING, 75, toscar_msgrouting, "Route AIM/OSCAR messages");
@@ -326,7 +326,7 @@ toscar__keepalive_matcher(struct nafmodule *mod, struct nafconn *conn, const voi
 
 	if ((now - conn->lasttx_soft) > timps_oscar__keepalive_frequency) {
 		if (timps_oscar__debug > 1) {
-			dvprintf(mod, "[%lu] sending nop (%d seconds since last tx)\n",
+			tvprintf(mod, "[%lu] sending nop (%d seconds since last tx)\n",
 				 conn->cid,
 				 now - conn->lasttx_soft);
 		}
@@ -343,7 +343,7 @@ toscar__keepalive_matcher(struct nafmodule *mod, struct nafconn *conn, const voi
 	 * this often.
 	 */
 	if ((now - conn->lasttx_hard) > timps_oscar__txtimeout) {
-		dvprintf(mod, "[%lu] connection timed out, closing (%d seconds since last hard tx)\n",
+		tvprintf(mod, "[%lu] connection timed out, closing (%d seconds since last hard tx)\n",
 			 conn->cid,
 			 now - conn->lasttx_hard);
 		naf_conn_schedulekill(conn);

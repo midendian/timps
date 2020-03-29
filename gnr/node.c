@@ -190,7 +190,7 @@ static void freenode(struct gnrnode *gn, int reason)
 	}
 
 #if 0
-	dvprintf(gnr__module, "user offline: %s[%s][%s][%s%s%s] -- %s%s%s\n",
+	tvprintf(gnr__module, "user offline: %s[%s][%s][%s%s%s] -- %s%s%s\n",
 			gn->name,
 			gn->service,
 			gn->ownermod ? gn->ownermod->name : "unknown",
@@ -424,7 +424,7 @@ struct gnrnode *gnr_node_online(struct nafmodule *owner, const char *name, const
 		gnr__nodestats.peered++;
 
 #if 0
-	dvprintf(gnr__module, "user online: %s[%s][%s][%s%s%s]\n",
+	tvprintf(gnr__module, "user online: %s[%s][%s][%s%s%s]\n",
 			gn->name,
 			gn->service,
 			gn->ownermod ? gn->ownermod->name : "unknown",
@@ -458,7 +458,7 @@ int gnr_node_remetric(struct gnrnode *gn, int newmetric)
 		return -1;
 
 	if (gn->metric < newmetric)
-		dvprintf(gnr__module, "BUG: gnr_node_remetric asked to make node %s[%s] farther away (new = %d, old = %d)\n", gn->name, gn->service, newmetric, gn->metric);
+		tvprintf(gnr__module, "BUG: gnr_node_remetric asked to make node %s[%s] farther away (new = %d, old = %d)\n", gn->name, gn->service, newmetric, gn->metric);
 
 
 	if (gn->metric == GNR_NODE_METRIC_LOCAL)

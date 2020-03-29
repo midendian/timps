@@ -265,20 +265,20 @@ toscar_flap_handlechan1__newconn(struct nafmodule *mod, struct nafconn *conn, na
 	if (!(cktlv = naf_tlv_get(mod, *tlvh, 0x0006))) {
 		/* no cookie = wtf are we doing here? */
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] cookie FLAP missing cookie\n", conn->cid);
+			tvprintf(mod, "[cid %lu] cookie FLAP missing cookie\n", conn->cid);
 		return HRET_ERROR;
 	}
 
 	if (toscar_ckcache_rem(mod, cktlv->tlv_value, cktlv->tlv_length,
 				&ip, &sn, &servtype) == -1) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] received unknown cookie\n", conn->cid);
+			tvprintf(mod, "[cid %lu] received unknown cookie\n", conn->cid);
 		ret = HRET_ERROR;
 		goto out;
 	}
 
 	if (timps_oscar__debug > 1)
-		dvprintf(mod, "[cid %lu] matched cookie to sn '%s', ip '%s', servtype %d\n", conn->cid, sn, ip, servtype);
+		tvprintf(mod, "[cid %lu] matched cookie to sn '%s', ip '%s', servtype %d\n", conn->cid, sn, ip, servtype);
 
 	if (naf_conn_startconnect(mod, conn, ip, TIMPS_OSCAR_DEFAULTPORT) == -1) {
 		ret = HRET_ERROR;
@@ -326,7 +326,7 @@ toscar_flap_handlechan1(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *b
 	flapver = naf_sbuf_get32(&sb);
 	if (flapver != 0x00000001) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] %s sent invalid FLAP version\n", conn->cid, !(conn->type & NAF_CONN_TYPE_CLIENT) ? "server" : "client");
+			tvprintf(mod, "[cid %lu] %s sent invalid FLAP version\n", conn->cid, !(conn->type & NAF_CONN_TYPE_CLIENT) ? "server" : "client");
 		return HRET_ERROR;
 	}
 
@@ -345,7 +345,7 @@ toscar_flap_handlechan1(struct nafmodule *mod, struct nafconn *conn, naf_u8_t *b
 		ret = toscar_flap_handlechan1__newconn(mod, conn, &tlvh);
 	else {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] unable to determine purpose of channel 1 packet\n", conn->cid);
+			tvprintf(mod, "[cid %lu] unable to determine purpose of channel 1 packet\n", conn->cid);
 		ret = HRET_ERROR;
 	}
 
@@ -377,7 +377,7 @@ toscar_flap_handleread(struct nafmodule *mod, struct nafconn *conn)
 
 	if (FLAPHDR_MAGIC(buf) != FLAP_MAGIC) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] FLAP packet did not start with correct magic\n", conn->cid);
+			tvprintf(mod, "[cid %lu] FLAP packet did not start with correct magic\n", conn->cid);
 		goto errout;
 	}
 
@@ -388,27 +388,27 @@ toscar_flap_handleread(struct nafmodule *mod, struct nafconn *conn)
 				(FLAPHDR_CHAN(buf) == 0x04) ||
 				(FLAPHDR_CHAN(buf) == 0x05) ) ) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] FLAP packet on invalid channel\n", conn->cid);
+			tvprintf(mod, "[cid %lu] FLAP packet on invalid channel\n", conn->cid);
 		goto errout;
 	}
 
 	if (FLAPHDR_LEN(buf) > MAXSNACLEN) {
 		if (timps_oscar__debug > 0)
-			dvprintf(mod, "[cid %lu] FLAP packet contained invalid length\n", conn->cid);
+			tvprintf(mod, "[cid %lu] FLAP packet contained invalid length\n", conn->cid);
 		goto errout;
 	}
 
 	if (buflen != (FLAPHDR_LEN(buf) + FLAPHDRLEN)) {
 		if (naf_conn_reqread(conn, buf, buflen + FLAPHDR_LEN(buf), buflen) == -1) {
 			if (timps_oscar__debug > 0)
-				dvprintf(mod, "[cid %lu] naf refused further read request\n", conn->cid);
+				tvprintf(mod, "[cid %lu] naf refused further read request\n", conn->cid);
 			goto errout;
 		}
 		return 0; /* continue later */
 	}
 
 	if (timps_oscar__debug > 1)
-		dvprintf(mod, "[cid %lu] received full FLAP packet on channel 0x%02x, seqnum 0x%04lx, length 0x%04lx (%d bytes)\n", conn->cid, FLAPHDR_CHAN(buf), FLAPHDR_SEQNUM(buf), FLAPHDR_LEN(buf), FLAPHDR_LEN(buf));
+		tvprintf(mod, "[cid %lu] received full FLAP packet on channel 0x%02x, seqnum 0x%04lx, length 0x%04lx (%d bytes)\n", conn->cid, FLAPHDR_CHAN(buf), FLAPHDR_SEQNUM(buf), FLAPHDR_LEN(buf), FLAPHDR_LEN(buf));
 
 
 	if (FLAPHDR_CHAN(buf) == 0x01)
@@ -553,7 +553,7 @@ toscar__detacholdconns__matcher(struct nafmodule *mod, struct nafconn *conn, con
 		return 0;
 
 	if (timps_oscar__debug) {
-		dvprintf(mod, "disconnecting old server connection %lu for '%s'\n", conn->cid, cursn);
+		tvprintf(mod, "disconnecting old server connection %lu for '%s'\n", conn->cid, cursn);
 	}
 
 	naf_conn_schedulekill(conn);

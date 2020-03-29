@@ -324,11 +324,11 @@ static int readconfig(struct nafmodule *mod, const char *cfn, int including)
 		return -1;
 
 	if (!(cf = fopen(cfn, "r"))) {
-		dvprintf(mod, "could not open %s: %s\n", cfn, strerror(errno));
+		tvprintf(mod, "could not open %s: %s\n", cfn, strerror(errno));
 		return -1;
 	}
 
-	dvprintf(mod, "reading configuration from %s...\n", cfn);
+	tvprintf(mod, "reading configuration from %s...\n", cfn);
 
 	memset(secname, 0, sizeof(secname));
 	memset(modname, 0, sizeof(modname));
@@ -349,10 +349,10 @@ static int readconfig(struct nafmodule *mod, const char *cfn, int including)
 				linestart += 8;
 
 				if (readconfig(mod, linestart, 1) == -1) {
-					dvprintf(mod, "errors parsing included file %s\n", linestart);
+					tvprintf(mod, "errors parsing included file %s\n", linestart);
 				}
 			} else
-				dvprintf(mod, "unknown ! operand %s\n", linestart);
+				tvprintf(mod, "unknown ! operand %s\n", linestart);
 
 			continue;
 		}
@@ -383,7 +383,7 @@ static int readconfig(struct nafmodule *mod, const char *cfn, int including)
 		}
 
 		if (!strchr(linestart, '=')) {
-			dvprintf(mod, "invalid line: %s\n", linestart);
+			tvprintf(mod, "invalid line: %s\n", linestart);
 			continue;
 		}
 
@@ -415,7 +415,7 @@ static int readconfig(struct nafmodule *mod, const char *cfn, int including)
 			naf_config_setparm(varname, (val && strlen(val)) ? val : NULL);
 
 		} else {
-			dvprintf(mod, "unknown declaration outside section %s: %s\n", secname, linestart);
+			tvprintf(mod, "unknown declaration outside section %s: %s\n", secname, linestart);
 		}
 	}
 
@@ -574,7 +574,7 @@ static int modinit(struct nafmodule *mod)
 	ourmodule = mod;
 
 	if (!(cfn = naf_config_getparmstr(CONFIG_PARM_FILENAME)))
-		dprintf(mod, "no config file specified, using defaults\n");
+		tprintf(mod, "no config file specified, using defaults\n");
 
 	readconfig(mod, cfn, 0);
 
@@ -597,11 +597,11 @@ static void signalhandler(struct nafmodule *mod, struct nafmodule *source, int s
 
 	if (signum == NAF_SIGNAL_INFO) {
 
-		dprintf(mod, "NAF Config Info\n");
+		tprintf(mod, "NAF Config Info\n");
 		if (conffilename)
-			dvprintf(mod, "    Using config from %s\n", conffilename);
+			tvprintf(mod, "    Using config from %s\n", conffilename);
 		else
-			dprintf(mod, "    Using defaults (no conf file)\n");
+			tprintf(mod, "    Using defaults (no conf file)\n");
 
 		{
 			struct parm_s *cur;
@@ -609,7 +609,7 @@ static void signalhandler(struct nafmodule *mod, struct nafmodule *source, int s
 			for (cur = parmlist; cur; cur = cur->next) {
 				/* only dump site parameters */
 				if (1 /*strncmp(cur->parm, "site.", strlen("site.")) == 0*/) {
-					dvprintf(mod, "    %s: %s\n", cur->parm, cur->val);
+					tvprintf(mod, "    %s: %s\n", cur->parm, cur->val);
 				}
 			}
 		}

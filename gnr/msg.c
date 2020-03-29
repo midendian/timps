@@ -270,7 +270,7 @@ int gnr_msg_route(struct nafmodule *srcmod, struct gnrmsg *gm)
 	/* Make sure we're routing a sane message... */
 	if (!gm || !gm->srcname || !gm->srcnameservice ||
 			!gm->destname || !gm->destnameservice) {
-		dvprintf(gnr__module, "gnr_msg_route: invalid args (%p/%s[%s]/%s[%s])\n",
+		tvprintf(gnr__module, "gnr_msg_route: invalid args (%p/%s[%s]/%s[%s])\n",
 				gm,
 				gm ? gm->srcname : NULL,
 				gm ? gm->srcnameservice : NULL,
@@ -283,7 +283,7 @@ int gnr_msg_route(struct nafmodule *srcmod, struct gnrmsg *gm)
 	gmhi.destnode = gnr_node_findbyname(gm->destname, gm->destnameservice);
 
 	if (gnr__debug > 0) {
-		dvprintf(gnr__module, "gnr_msg_route: from %s, %s[%s] -> %s[%s], msgtext = (%s) '%s', msgflags = %08lx, srconn = %d\n",
+		tvprintf(gnr__module, "gnr_msg_route: from %s, %s[%s] -> %s[%s], msgtext = (%s) '%s', msgflags = %08lx, srconn = %d\n",
 				srcmod,
 				gm->srcname, gm->srcnameservice,
 				gm->destname, gm->destnameservice,
@@ -330,7 +330,7 @@ int gnr_msg_route(struct nafmodule *srcmod, struct gnrmsg *gm)
 		timersub(&tvout, &tvin, &tv);
 		el = (double)tv.tv_sec + ((double)tv.tv_usec / 1000000);
 		el *= 1000; /* milliseconds */
-		dvprintf(gnr__module, "gnr_msg_route: time elapsed since message input: %gms\n", el);
+		tvprintf(gnr__module, "gnr_msg_route: time elapsed since message input: %gms\n", el);
 	}
 #endif
 	return 0;
